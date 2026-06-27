@@ -4,6 +4,7 @@ import { compare } from "bcryptjs";
 import { getUserByUsername } from "./db/queries";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
