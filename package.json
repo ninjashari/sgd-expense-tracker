@@ -1,0 +1,33 @@
+{
+  "name": "sgd-expense-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3000}",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "next-auth": "beta",
+    "bcryptjs": "latest",
+    "drizzle-orm": "latest",
+    "better-sqlite3": "latest",
+    "lucide-react": "latest",
+    "clsx": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/react": "latest",
+    "@types/node": "latest",
+    "@types/bcryptjs": "latest",
+    "@types/better-sqlite3": "latest",
+    "@tailwindcss/postcss": "latest",
+    "tailwindcss": "latest",
+    "drizzle-kit": "latest"
+  }
+}
