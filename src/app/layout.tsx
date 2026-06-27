@@ -5,8 +5,8 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SG Trip Expenses",
-  description: "Track your Singapore trip expenses",
+  title: "TripKharcha",
+  description: "Track your Singapore trip expenses in INR",
 };
 
 export default function RootLayout({

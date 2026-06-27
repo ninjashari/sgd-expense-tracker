@@ -28,7 +28,7 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold tracking-tight">Create Account</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Join SG Expenses tracker
+            Join TripKharcha
           </p>
         </div>
 
