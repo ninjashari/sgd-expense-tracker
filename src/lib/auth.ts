@@ -15,7 +15,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials?.password as string;
         if (!username || !password) return null;
 
-        const user = getUserByUsername(username);
+        const user = await getUserByUsername(username);
         if (!user) return null;
 
         const valid = await compare(password, user.password);

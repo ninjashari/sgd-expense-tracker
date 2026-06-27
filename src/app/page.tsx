@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { SummaryCards } from "@/components/summary-cards";
@@ -20,8 +22,10 @@ export default async function Dashboard({
   const validStatus =
     status === "paid" || status === "planned" ? status : undefined;
 
-  const summary = getSummary(session.user.id);
-  const expenses = getAllExpenses(session.user.id, validStatus);
+  const [summary, expenseList] = await Promise.all([
+    getSummary(session.user.id),
+    getAllExpenses(session.user.id, validStatus),
+  ]);
 
   return (
     <div className="min-h-screen pb-8">
@@ -35,7 +39,7 @@ export default async function Dashboard({
         <Suspense>
           <FilterTabs />
         </Suspense>
-        <ExpenseList expenses={expenses} />
+        <ExpenseList expenses={expenseList} />
       </main>
     </div>
   );

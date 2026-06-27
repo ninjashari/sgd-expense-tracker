@@ -10,24 +10,23 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "next-auth": "beta",
+    "@libsql/client": "^0.17.4",
     "bcryptjs": "latest",
+    "clsx": "latest",
     "drizzle-orm": "latest",
-    "better-sqlite3": "latest",
     "lucide-react": "latest",
-    "clsx": "latest"
+    "next": "latest",
+    "next-auth": "beta",
+    "react": "latest",
+    "react-dom": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "@types/react": "latest",
-    "@types/node": "latest",
-    "@types/bcryptjs": "latest",
-    "@types/better-sqlite3": "latest",
     "@tailwindcss/postcss": "latest",
+    "@types/bcryptjs": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "drizzle-kit": "latest",
     "tailwindcss": "latest",
-    "drizzle-kit": "latest"
+    "typescript": "latest"
   }
 }

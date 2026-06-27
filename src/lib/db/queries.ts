@@ -3,47 +3,45 @@ import { expenses, users } from "./schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import type { Expense } from "./schema";
 
-export function getAllExpenses(
+export async function getAllExpenses(
   userId: string,
   status?: "paid" | "planned"
-): Expense[] {
+): Promise<Expense[]> {
   if (status) {
     return db
       .select()
       .from(expenses)
       .where(and(eq(expenses.userId, userId), eq(expenses.status, status)))
-      .orderBy(desc(expenses.date))
-      .all();
+      .orderBy(desc(expenses.date));
   }
   return db
     .select()
     .from(expenses)
     .where(eq(expenses.userId, userId))
-    .orderBy(desc(expenses.date))
-    .all();
+    .orderBy(desc(expenses.date));
 }
 
-export function getExpenseById(
+export async function getExpenseById(
   id: string,
   userId: string
-): Expense | undefined {
-  return db
+): Promise<Expense | undefined> {
+  const rows = await db
     .select()
     .from(expenses)
-    .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
-    .get();
+    .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
+  return rows[0];
 }
 
-export function getSummary(userId: string) {
-  const result = db
+export async function getSummary(userId: string) {
+  const rows = await db
     .select({
       totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
       totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
     })
     .from(expenses)
-    .where(eq(expenses.userId, userId))
-    .get();
+    .where(eq(expenses.userId, userId));
 
+  const result = rows[0];
   return {
     totalPaid: result?.totalPaid ?? 0,
     totalPlanned: result?.totalPlanned ?? 0,
@@ -51,10 +49,10 @@ export function getSummary(userId: string) {
   };
 }
 
-export function getUserByUsername(username: string) {
-  return db
+export async function getUserByUsername(username: string) {
+  const rows = await db
     .select()
     .from(users)
-    .where(eq(users.username, username))
-    .get();
+    .where(eq(users.username, username));
+  return rows[0];
 }
