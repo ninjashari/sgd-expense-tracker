@@ -22,22 +22,20 @@ export async function addExpense(formData: FormData) {
   const currency = (formData.get("currency") as Currency) || "INR";
   const amountInr = convertToINR(amount, currency);
 
-  db.insert(expenses)
-    .values({
-      id: crypto.randomUUID(),
-      userId,
-      description: formData.get("description") as string,
-      amount,
-      currency,
-      amountInr,
-      category: formData.get("category") as string,
-      status: formData.get("status") as string,
-      date: formData.get("date") as string,
-      notes: (formData.get("notes") as string) || null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
-    .run();
+  await db.insert(expenses).values({
+    id: crypto.randomUUID(),
+    userId,
+    description: formData.get("description") as string,
+    amount,
+    currency,
+    amountInr,
+    category: formData.get("category") as string,
+    status: formData.get("status") as string,
+    date: formData.get("date") as string,
+    notes: (formData.get("notes") as string) || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
 
   revalidatePath("/");
   redirect("/");
@@ -49,7 +47,8 @@ export async function updateExpense(id: string, formData: FormData) {
   const currency = (formData.get("currency") as Currency) || "INR";
   const amountInr = convertToINR(amount, currency);
 
-  db.update(expenses)
+  await db
+    .update(expenses)
     .set({
       description: formData.get("description") as string,
       amount,
@@ -61,8 +60,7 @@ export async function updateExpense(id: string, formData: FormData) {
       notes: (formData.get("notes") as string) || null,
       updatedAt: new Date().toISOString(),
     })
-    .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
-    .run();
+    .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
 
   revalidatePath("/");
   redirect("/");
@@ -71,9 +69,9 @@ export async function updateExpense(id: string, formData: FormData) {
 export async function deleteExpense(id: string) {
   const userId = await getUserId();
 
-  db.delete(expenses)
-    .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
-    .run();
+  await db
+    .delete(expenses)
+    .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
 
   revalidatePath("/");
   redirect("/");
@@ -94,26 +92,23 @@ export async function registerUser(formData: FormData) {
     return { error: "Passwords do not match" };
   }
 
-  const existing = db
+  const existing = await db
     .select()
     .from(users)
-    .where(eq(users.username, username))
-    .get();
+    .where(eq(users.username, username));
 
-  if (existing) {
+  if (existing.length > 0) {
     return { error: "Username already taken" };
   }
 
   const hashed = await hash(password, 10);
 
-  db.insert(users)
-    .values({
-      id: crypto.randomUUID(),
-      username,
-      password: hashed,
-      createdAt: new Date().toISOString(),
-    })
-    .run();
+  await db.insert(users).values({
+    id: crypto.randomUUID(),
+    username,
+    password: hashed,
+    createdAt: new Date().toISOString(),
+  });
 
   redirect("/login?registered=1");
 }

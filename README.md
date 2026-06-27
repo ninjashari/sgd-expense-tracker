@@ -26,7 +26,7 @@ A minimal, mobile-first expense tracker for your Singapore trip. Track paid and 
 - **Next.js 15** (App Router, Server Components, Server Actions)
 - **React 19** + **TypeScript**
 - **Tailwind CSS v4**
-- **SQLite** + **Drizzle ORM**
+- **Turso** (libSQL) + **Drizzle ORM**
 - **NextAuth.js v5** (credentials provider, bcrypt)
 - **Lucide React** (icons)
 
@@ -45,16 +45,39 @@ cd sgd-expense-tracker
 npm install
 ```
 
+### Turso Database Setup
+
+1. Install the [Turso CLI](https://docs.turso.tech/cli/installation):
+
+```bash
+curl -sSfL https://get.tur.so/install.sh | bash
+```
+
+2. Sign up and create a database:
+
+```bash
+turso auth signup
+turso db create tripkharcha
+```
+
+3. Get your credentials:
+
+```bash
+turso db show tripkharcha --url
+turso db tokens create tripkharcha
+```
+
 ### Environment Variables
 
 Create a `.env.local` file:
 
 ```env
 AUTH_SECRET=your-random-secret-min-32-characters
-DATABASE_PATH=./data/expenses.db
+TURSO_DATABASE_URL=libsql://your-db-name.turso.io
+TURSO_AUTH_TOKEN=your-turso-auth-token
 ```
 
-### Database Setup
+### Push Schema
 
 ```bash
 npx drizzle-kit push
@@ -76,15 +99,15 @@ Open [http://localhost:3000](http://localhost:3000) and create an account to get
 
 | Setting | Value |
 |---------|-------|
-| Build Command | `npm install && npm run build` |
+| Build Command | `npm install && npm run db:push && npm run build` |
 | Start Command | `npm start` |
-| Persistent Disk | 1 GB, mount path: `/data` |
 
 4. Add environment variables:
 
 | Variable | Value |
 |----------|-------|
-| `DATABASE_PATH` | `/data/expenses.db` |
+| `TURSO_DATABASE_URL` | `libsql://your-db-name.turso.io` |
+| `TURSO_AUTH_TOKEN` | *(from `turso db tokens create`)* |
 | `AUTH_SECRET` | *(generate a random 32+ character string)* |
 
 ## License

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ExpenseForm } from "@/components/expense-form";
@@ -16,7 +18,7 @@ export default async function EditExpensePage({
   if (!session?.user?.id) redirect("/login");
 
   const { id } = await params;
-  const expense = getExpenseById(id, session.user.id);
+  const expense = await getExpenseById(id, session.user.id);
   if (!expense) notFound();
 
   const updateAction = updateExpense.bind(null, id);
