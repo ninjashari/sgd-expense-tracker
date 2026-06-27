@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { hash } from "bcryptjs";
-import { convertToSGD } from "./utils";
+import { convertToINR } from "./utils";
 import type { Currency } from "./constants";
 
 async function getUserId() {
@@ -19,8 +19,8 @@ async function getUserId() {
 export async function addExpense(formData: FormData) {
   const userId = await getUserId();
   const amount = parseFloat(formData.get("amount") as string);
-  const currency = (formData.get("currency") as Currency) || "SGD";
-  const amountSgd = convertToSGD(amount, currency);
+  const currency = (formData.get("currency") as Currency) || "INR";
+  const amountInr = convertToINR(amount, currency);
 
   db.insert(expenses)
     .values({
@@ -29,7 +29,7 @@ export async function addExpense(formData: FormData) {
       description: formData.get("description") as string,
       amount,
       currency,
-      amountSgd,
+      amountInr,
       category: formData.get("category") as string,
       status: formData.get("status") as string,
       date: formData.get("date") as string,
@@ -46,15 +46,15 @@ export async function addExpense(formData: FormData) {
 export async function updateExpense(id: string, formData: FormData) {
   const userId = await getUserId();
   const amount = parseFloat(formData.get("amount") as string);
-  const currency = (formData.get("currency") as Currency) || "SGD";
-  const amountSgd = convertToSGD(amount, currency);
+  const currency = (formData.get("currency") as Currency) || "INR";
+  const amountInr = convertToINR(amount, currency);
 
   db.update(expenses)
     .set({
       description: formData.get("description") as string,
       amount,
       currency,
-      amountSgd,
+      amountInr,
       category: formData.get("category") as string,
       status: formData.get("status") as string,
       date: formData.get("date") as string,

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { CATEGORIES, CURRENCIES } from "@/lib/constants";
-import { todayISO, convertToSGD, formatSGD } from "@/lib/utils";
+import { todayISO, convertToINR, formatINR } from "@/lib/utils";
 import type { Expense } from "@/lib/db/schema";
 import type { Category, Currency } from "@/lib/constants";
 import { useState } from "react";
@@ -19,15 +19,15 @@ export function ExpenseForm({ action, expense }: ExpenseFormProps) {
   );
   const [status, setStatus] = useState<string>(expense?.status || "planned");
   const [currency, setCurrency] = useState<Currency>(
-    (expense?.currency as Currency) || "SGD"
+    (expense?.currency as Currency) || "INR"
   );
   const [amount, setAmount] = useState(
     expense?.amount?.toString() || ""
   );
 
-  const sgdPreview =
-    currency !== "SGD" && amount
-      ? convertToSGD(parseFloat(amount) || 0, currency)
+  const inrPreview =
+    currency !== "INR" && amount
+      ? convertToINR(parseFloat(amount) || 0, currency)
       : null;
 
   return (
@@ -80,9 +80,9 @@ export function ExpenseForm({ action, expense }: ExpenseFormProps) {
             className="flex-1 bg-white rounded-xl px-4 py-3 text-sm shadow-sm border-0 outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-300"
           />
         </div>
-        {sgdPreview !== null && (
+        {inrPreview !== null && (
           <p className="text-xs text-gray-400 mt-1.5 ml-1">
-            ≈ {formatSGD(sgdPreview)}
+            ≈ {formatINR(inrPreview)}
           </p>
         )}
         <input type="hidden" name="currency" value={currency} />

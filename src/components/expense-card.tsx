@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CATEGORIES, STATUS_STYLES } from "@/lib/constants";
-import { formatCurrency, formatSGD, formatDate } from "@/lib/utils";
+import { formatCurrency, formatINR, formatDate } from "@/lib/utils";
 import type { Expense } from "@/lib/db/schema";
 import type { Category, Currency } from "@/lib/constants";
 
@@ -30,9 +30,9 @@ export function ExpenseCard({ expense }: { expense: Expense }) {
               </div>
               <div className="text-right shrink-0">
                 <p className="font-semibold text-sm">
-                  {formatSGD(expense.amountSgd)}
+                  {formatINR(expense.amountInr)}
                 </p>
-                {expense.currency !== "SGD" && (
+                {expense.currency !== "INR" && (
                   <p className="text-xs text-gray-400">
                     {formatCurrency(expense.amount, expense.currency as Currency)}
                   </p>

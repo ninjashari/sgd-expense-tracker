@@ -43,8 +43,8 @@ export const CATEGORIES = {
 export type Category = keyof typeof CATEGORIES;
 
 export const CURRENCIES = {
-  SGD: { label: "SGD", symbol: "S$", rate: 1 },
-  INR: { label: "INR", symbol: "₹", rate: 0.016 },
+  INR: { label: "INR", symbol: "₹", rate: 1 },
+  SGD: { label: "SGD", symbol: "S$", rate: 62.5 },
 } as const;
 
 export type Currency = keyof typeof CURRENCIES;

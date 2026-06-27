@@ -37,8 +37,8 @@ export function getExpenseById(
 export function getSummary(userId: string) {
   const result = db
     .select({
-      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountSgd} else 0 end), 0)`,
-      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountSgd} else 0 end), 0)`,
+      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
+      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
     })
     .from(expenses)
     .where(eq(expenses.userId, userId))
