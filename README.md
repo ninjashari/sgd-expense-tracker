@@ -100,7 +100,7 @@ Open [http://localhost:3000](http://localhost:3000) and create an account to get
 | Setting | Value |
 |---------|-------|
 | Build Command | `npm install && npm run db:push && npm run build` |
-| Start Command | `node .next/standalone/server.js` |
+| Start Command | `npm start` |
 
 4. Add environment variables:
 
