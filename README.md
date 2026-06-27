@@ -76,7 +76,7 @@ Open [http://localhost:3000](http://localhost:3000) and create an account to get
 
 | Setting | Value |
 |---------|-------|
-| Build Command | `npm install && npx drizzle-kit push && npm run build` |
+| Build Command | `npm install && npm run build` |
 | Start Command | `npm start` |
 | Persistent Disk | 1 GB, mount path: `/data` |
 

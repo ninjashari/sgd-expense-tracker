@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prestart": "drizzle-kit push",
     "start": "next start -p ${PORT:-3000}",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
