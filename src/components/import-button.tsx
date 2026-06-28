@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Upload } from "lucide-react";
 import { ImportDrawer } from "./import-drawer";
+import type { CategoryRecord } from "@/lib/db/schema";
 
-export function ImportButton({ tripId }: { tripId: string }) {
+export function ImportButton({ tripId, categories }: { tripId: string; categories: CategoryRecord[] }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -16,7 +17,7 @@ export function ImportButton({ tripId }: { tripId: string }) {
         <Upload size={16} />
         <span className="hidden sm:inline">Import</span>
       </button>
-      <ImportDrawer open={open} onClose={() => setOpen(false)} tripId={tripId} />
+      <ImportDrawer open={open} onClose={() => setOpen(false)} tripId={tripId} categories={categories} />
     </>
   );
 }

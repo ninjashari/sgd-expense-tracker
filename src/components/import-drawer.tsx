@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X, Upload, ClipboardPaste, FileUp, Trash2 } from "lucide-react";
 import { importExpenses } from "@/lib/actions";
 import { CURRENCIES, type Currency, type Status } from "@/lib/constants";
+import type { CategoryRecord } from "@/lib/db/schema";
 
 interface ParsedRow {
   selected: boolean;
@@ -116,7 +117,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
   return { rows, errors };
 }
 
-export function ImportDrawer({ open, onClose, tripId }: { open: boolean; onClose: () => void; tripId: string }) {
+export function ImportDrawer({ open, onClose, tripId, categories }: { open: boolean; onClose: () => void; tripId: string; categories: CategoryRecord[] }) {
   const [mode, setMode] = useState<"paste" | "file">("paste");
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -161,9 +162,22 @@ export function ImportDrawer({ open, onClose, tripId }: { open: boolean; onClose
     setRows((prev) => prev.filter((_, j) => j !== i));
   }
 
+  function resolveCategoryId(name: string): string | null {
+    const lower = name.toLowerCase().trim();
+    const match = categories.find((c) => c.name.toLowerCase() === lower);
+    return match?.id ?? null;
+  }
+
   async function handleImport() {
     const selected = rows.filter((r) => r.selected);
     if (selected.length === 0) return;
+
+    const unmapped = selected.filter((r) => !resolveCategoryId(r.category));
+    if (unmapped.length > 0) {
+      const names = [...new Set(unmapped.map((r) => r.category))];
+      setImportError(`Unknown categories: ${names.join(", ")}. Create them in Settings first, or update the values to match existing categories.`);
+      return;
+    }
 
     setImporting(true);
     setImportError("");
@@ -172,7 +186,7 @@ export function ImportDrawer({ open, onClose, tripId }: { open: boolean; onClose
       description: r.description,
       amount: parseFloat(r.amount),
       currency: r.currency,
-      category: r.category,
+      category: resolveCategoryId(r.category)!,
       status: r.status,
       date: r.date,
       notes: r.notes || null,
@@ -341,12 +355,18 @@ export function ImportDrawer({ open, onClose, tripId }: { open: boolean; onClose
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
-                      <input
+                      <select
                         value={row.category}
                         onChange={(e) => updateRow(i, "category", e.target.value)}
                         className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
-                        placeholder="Category"
-                      />
+                      >
+                        {!categories.some((c) => c.name.toLowerCase() === row.category.toLowerCase()) && (
+                          <option value={row.category}>{row.category} (?)</option>
+                        )}
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
                       <select
                         value={row.status}
                         onChange={(e) => updateRow(i, "status", e.target.value)}

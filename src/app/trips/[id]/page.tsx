@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { SummaryCards } from "@/components/summary-cards";
 import { FilterTabs } from "@/components/filter-tabs";
 import { ExpenseList } from "@/components/expense-list";
+import { ImportButton } from "@/components/import-button";
 import {
   getAllExpenses,
   getTripById,
@@ -64,12 +65,15 @@ export default async function TripDetailPage({
           <div>
             <p className="text-xs text-gray-400">{trip.destination}</p>
           </div>
-          <a
-            href={`/trips/${id}/settings`}
-            className="text-xs text-gray-400 hover:text-gray-600 underline"
-          >
-            Edit Trip
-          </a>
+          <div className="flex items-center gap-3">
+            <ImportButton tripId={id} categories={userCategories} />
+            <a
+              href={`/trips/${id}/settings`}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Edit Trip
+            </a>
+          </div>
         </div>
         <SummaryCards
           totalPaid={summary.totalPaid}
