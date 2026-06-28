@@ -1,12 +1,11 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { loginUser } from "@/lib/actions";
+import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
   const [error, setError] = useState("");
@@ -18,19 +17,11 @@ function LoginForm() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-
-    const result = await signIn("credentials", {
-      username: formData.get("username"),
-      password: formData.get("password"),
-      redirect: false,
-    });
+    const result = await loginUser(formData);
 
     if (result?.error) {
-      setError("Invalid username or password");
+      setError(result.error);
       setLoading(false);
-    } else {
-      router.push("/");
-      router.refresh();
     }
   }
 

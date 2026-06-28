@@ -5,8 +5,9 @@ import { expenses, users } from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "./auth";
+import { auth, signIn } from "./auth";
 import { hash } from "bcryptjs";
+import { AuthError } from "next-auth";
 import { convertToINR } from "./utils";
 import type { Currency } from "./constants";
 
@@ -75,6 +76,21 @@ export async function deleteExpense(id: string) {
 
   revalidatePath("/");
   redirect("/");
+}
+
+export async function loginUser(formData: FormData) {
+  try {
+    await signIn("credentials", {
+      username: formData.get("username"),
+      password: formData.get("password"),
+      redirectTo: "/",
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return { error: "Invalid username or password" };
+    }
+    throw error;
+  }
 }
 
 export async function registerUser(formData: FormData) {
