@@ -15,7 +15,7 @@ export function Header() {
             className="flex items-center gap-1.5 bg-gray-900 text-white text-sm font-medium px-3 py-2 rounded-xl hover:bg-gray-800 transition-colors"
           >
             <Plus size={16} />
-            Add
+            <span className="hidden sm:inline">Add</span>
           </Link>
           <form
             action={async () => {

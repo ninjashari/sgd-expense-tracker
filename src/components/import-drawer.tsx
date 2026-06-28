@@ -330,13 +330,13 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
                         step="0.01"
                         value={row.amount}
                         onChange={(e) => updateRow(i, "amount", e.target.value)}
-                        className="text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-gray-200"
+                        className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-gray-200"
                         placeholder="Amount"
                       />
                       <select
                         value={row.currency}
                         onChange={(e) => updateRow(i, "currency", e.target.value)}
-                        className="text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
+                        className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
                       >
                         {Object.keys(CURRENCIES).map((c) => (
                           <option key={c} value={c}>{c}</option>
@@ -345,7 +345,7 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
                       <select
                         value={row.category}
                         onChange={(e) => updateRow(i, "category", e.target.value)}
-                        className="text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
+                        className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
                       >
                         {Object.entries(CATEGORIES).map(([k, v]) => (
                           <option key={k} value={k}>{v.label}</option>
@@ -354,7 +354,7 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
                       <select
                         value={row.status}
                         onChange={(e) => updateRow(i, "status", e.target.value)}
-                        className="text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
+                        className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
                       >
                         <option value="planned">Planned</option>
                         <option value="paid">Paid</option>
@@ -363,7 +363,7 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
                         type="date"
                         value={row.date}
                         onChange={(e) => updateRow(i, "date", e.target.value)}
-                        className="text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
+                        className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
                       />
                     </div>
 

@@ -14,7 +14,7 @@ export function ImportButton() {
         className="flex items-center gap-1.5 bg-gray-100 text-gray-700 text-sm font-medium px-3 py-2 rounded-xl hover:bg-gray-200 transition-colors"
       >
         <Upload size={16} />
-        Import
+        <span className="hidden sm:inline">Import</span>
       </button>
       <ImportDrawer open={open} onClose={() => setOpen(false)} />
     </>

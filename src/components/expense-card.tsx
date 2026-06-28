@@ -29,7 +29,7 @@ export function ExpenseCard({ expense }: { expense: Expense }) {
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="font-semibold text-sm">
+                <p className="font-semibold text-sm whitespace-nowrap">
                   {formatINR(expense.amountInr)}
                 </p>
                 {expense.currency !== "INR" && (
