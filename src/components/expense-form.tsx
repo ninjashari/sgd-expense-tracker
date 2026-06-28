@@ -11,9 +11,10 @@ import clsx from "clsx";
 interface ExpenseFormProps {
   action: (formData: FormData) => Promise<void>;
   expense?: Expense;
+  tripId?: string;
 }
 
-export function ExpenseForm({ action, expense }: ExpenseFormProps) {
+export function ExpenseForm({ action, expense, tripId }: ExpenseFormProps) {
   const [category, setCategory] = useState<string>(
     expense?.category || "food"
   );
@@ -32,6 +33,9 @@ export function ExpenseForm({ action, expense }: ExpenseFormProps) {
 
   return (
     <form action={action} className="space-y-6">
+      {(tripId || expense?.tripId) && (
+        <input type="hidden" name="tripId" value={tripId || expense?.tripId || ""} />
+      )}
       <div>
         <label className="block text-xs font-medium text-gray-500 mb-2">
           Description

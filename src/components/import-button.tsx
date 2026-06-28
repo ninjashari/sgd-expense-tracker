@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Upload } from "lucide-react";
 import { ImportDrawer } from "./import-drawer";
 
-export function ImportButton() {
+export function ImportButton({ tripId }: { tripId?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -16,7 +16,7 @@ export function ImportButton() {
         <Upload size={16} />
         Import
       </button>
-      <ImportDrawer open={open} onClose={() => setOpen(false)} />
+      <ImportDrawer open={open} onClose={() => setOpen(false)} tripId={tripId} />
     </>
   );
 }

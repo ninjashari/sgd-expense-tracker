@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import clsx from "clsx";
 
 const tabs = [
@@ -12,6 +12,7 @@ const tabs = [
 
 export function FilterTabs() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const current = searchParams.get("status") || "";
 
   return (
@@ -19,7 +20,7 @@ export function FilterTabs() {
       {tabs.map((tab) => (
         <Link
           key={tab.value}
-          href={tab.value ? `/?status=${tab.value}` : "/"}
+          href={tab.value ? `${pathname}?status=${tab.value}` : pathname}
           className={clsx(
             "px-4 py-2 rounded-xl text-sm font-medium transition-colors",
             current === tab.value

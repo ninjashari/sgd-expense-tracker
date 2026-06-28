@@ -1,30 +1,21 @@
 export const dynamic = "force-dynamic";
 
-import { Suspense } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Header } from "@/components/header";
 import { SummaryCards } from "@/components/summary-cards";
-import { FilterTabs } from "@/components/filter-tabs";
-import { ExpenseList } from "@/components/expense-list";
-import { getAllExpenses, getSummary } from "@/lib/db/queries";
+import { TripList } from "@/components/trip-list";
+import { getAllTrips, getSummary } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default async function Dashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>;
-}) {
+export default async function Dashboard() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const params = await searchParams;
-  const status = params.status as "paid" | "planned" | undefined;
-  const validStatus =
-    status === "paid" || status === "planned" ? status : undefined;
-
-  const [summary, expenseList] = await Promise.all([
+  const [summary, tripList] = await Promise.all([
     getSummary(session.user.id),
-    getAllExpenses(session.user.id, validStatus),
+    getAllTrips(session.user.id),
   ]);
 
   return (
@@ -36,10 +27,17 @@ export default async function Dashboard({
           totalPlanned={summary.totalPlanned}
           total={summary.total}
         />
-        <Suspense>
-          <FilterTabs />
-        </Suspense>
-        <ExpenseList expenses={expenseList} />
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-gray-500">Your Trips</h2>
+          <Link
+            href="/trips/new"
+            className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <Plus size={14} />
+            New Trip
+          </Link>
+        </div>
+        <TripList trips={tripList} />
       </main>
     </div>
   );

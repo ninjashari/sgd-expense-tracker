@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "./db/index";
-import { expenses, users } from "./db/schema";
+import { expenses, trips, users } from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -22,6 +22,7 @@ export async function addExpense(formData: FormData) {
   const amount = parseFloat(formData.get("amount") as string);
   const currency = (formData.get("currency") as Currency) || "INR";
   const amountInr = convertToINR(amount, currency);
+  const tripId = (formData.get("tripId") as string) || null;
 
   await db.insert(expenses).values({
     id: crypto.randomUUID(),
@@ -35,12 +36,14 @@ export async function addExpense(formData: FormData) {
     date: formData.get("date") as string,
     notes: (formData.get("notes") as string) || null,
     paidBy: (formData.get("paidBy") as string) || null,
+    tripId,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
 
-  revalidatePath("/");
-  redirect("/");
+  const dest = tripId ? `/trips/${tripId}` : "/";
+  revalidatePath(dest);
+  redirect(dest);
 }
 
 export async function updateExpense(id: string, formData: FormData) {
@@ -48,6 +51,7 @@ export async function updateExpense(id: string, formData: FormData) {
   const amount = parseFloat(formData.get("amount") as string);
   const currency = (formData.get("currency") as Currency) || "INR";
   const amountInr = convertToINR(amount, currency);
+  const tripId = (formData.get("tripId") as string) || null;
 
   await db
     .update(expenses)
@@ -61,26 +65,36 @@ export async function updateExpense(id: string, formData: FormData) {
       date: formData.get("date") as string,
       notes: (formData.get("notes") as string) || null,
       paidBy: (formData.get("paidBy") as string) || null,
+      tripId,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
 
-  revalidatePath("/");
-  redirect("/");
+  const dest = tripId ? `/trips/${tripId}` : "/";
+  revalidatePath(dest);
+  redirect(dest);
 }
 
 export async function deleteExpense(id: string) {
   const userId = await getUserId();
 
+  const rows = await db
+    .select({ tripId: expenses.tripId })
+    .from(expenses)
+    .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
+  const tripId = rows[0]?.tripId;
+
   await db
     .delete(expenses)
     .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
 
-  revalidatePath("/");
-  redirect("/");
+  const dest = tripId ? `/trips/${tripId}` : "/";
+  revalidatePath(dest);
+  redirect(dest);
 }
 
-export async function importExpenses(items: {
+export async function importExpenses(
+  items: {
     description: string;
     amount: number;
     currency: string;
@@ -89,7 +103,8 @@ export async function importExpenses(items: {
     date: string;
     notes: string | null;
     paidBy: string | null;
-  }[]
+  }[],
+  tripId?: string
 ) {
   const userId = await getUserId();
   const now = new Date().toISOString();
@@ -110,13 +125,68 @@ export async function importExpenses(items: {
       date: item.date,
       notes: item.notes,
       paidBy: item.paidBy,
+      tripId: tripId || null,
       createdAt: now,
       updatedAt: now,
     });
   }
 
-  revalidatePath("/");
+  const dest = tripId ? `/trips/${tripId}` : "/";
+  revalidatePath(dest);
   return {};
+}
+
+export async function addTrip(formData: FormData) {
+  const userId = await getUserId();
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  await db.insert(trips).values({
+    id,
+    userId,
+    name: formData.get("name") as string,
+    description: (formData.get("description") as string) || null,
+    startDate: (formData.get("startDate") as string) || null,
+    endDate: (formData.get("endDate") as string) || null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  revalidatePath("/");
+  redirect(`/trips/${id}`);
+}
+
+export async function updateTrip(id: string, formData: FormData) {
+  const userId = await getUserId();
+
+  await db
+    .update(trips)
+    .set({
+      name: formData.get("name") as string,
+      description: (formData.get("description") as string) || null,
+      startDate: (formData.get("startDate") as string) || null,
+      endDate: (formData.get("endDate") as string) || null,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(trips.id, id), eq(trips.userId, userId)));
+
+  revalidatePath(`/trips/${id}`);
+  redirect(`/trips/${id}`);
+}
+
+export async function deleteTrip(id: string) {
+  const userId = await getUserId();
+
+  await db
+    .delete(expenses)
+    .where(and(eq(expenses.tripId, id), eq(expenses.userId, userId)));
+
+  await db
+    .delete(trips)
+    .where(and(eq(trips.id, id), eq(trips.userId, userId)));
+
+  revalidatePath("/");
+  redirect("/");
 }
 
 export async function loginUser(formData: FormData) {

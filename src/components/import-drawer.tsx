@@ -117,7 +117,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
   return { rows, errors };
 }
 
-export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ImportDrawer({ open, onClose, tripId }: { open: boolean; onClose: () => void; tripId?: string }) {
   const [mode, setMode] = useState<"paste" | "file">("paste");
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -180,7 +180,7 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
       paidBy: r.paidBy || null,
     }));
 
-    const result = await importExpenses(expenses);
+    const result = await importExpenses(expenses, tripId);
     setImporting(false);
 
     if (result && "error" in result && result.error) {

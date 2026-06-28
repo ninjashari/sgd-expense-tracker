@@ -2,12 +2,12 @@
 
 import { Trash2 } from "lucide-react";
 
-export function DeleteButton({ action }: { action: () => Promise<void> }) {
+export function DeleteButton({ action, label = "expense" }: { action: () => Promise<void>; label?: string }) {
   return (
     <form
       action={action}
       onSubmit={(e) => {
-        if (!confirm("Delete this expense?")) {
+        if (!confirm(`Delete this ${label}?`)) {
           e.preventDefault();
         }
       }}
