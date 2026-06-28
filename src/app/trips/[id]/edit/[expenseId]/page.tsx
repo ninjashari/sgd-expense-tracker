@@ -5,25 +5,28 @@ import { ArrowLeft } from "lucide-react";
 import { ExpenseForm } from "@/components/expense-form";
 import { DeleteButton } from "@/components/delete-button";
 import { updateExpense, deleteExpense } from "@/lib/actions";
-import { getExpenseById } from "@/lib/db/queries";
+import { getExpenseById, getCategoriesForUser, getTripById } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 
 export default async function EditExpensePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; expenseId: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const { id } = await params;
-  const expense = await getExpenseById(id, session.user.id);
+  const { id, expenseId } = await params;
+  const trip = await getTripById(id, session.user.id);
+  if (!trip) notFound();
+
+  const expense = await getExpenseById(expenseId, session.user.id);
   if (!expense) notFound();
 
-  const backHref = expense.tripId ? `/trips/${expense.tripId}` : "/";
-  const updateAction = updateExpense.bind(null, id);
-  const deleteAction = deleteExpense.bind(null, id);
+  const categories = await getCategoriesForUser(session.user.id);
+  const boundUpdateAction = updateExpense.bind(null, expenseId, id);
+  const boundDeleteAction = deleteExpense.bind(null, expenseId);
 
   return (
     <div className="min-h-screen pb-8">
@@ -31,7 +34,7 @@ export default async function EditExpensePage({
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href={backHref}
+              href={`/trips/${id}`}
               className="p-2 -ml-2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ArrowLeft size={20} />
@@ -40,11 +43,18 @@ export default async function EditExpensePage({
               Edit Expense
             </h1>
           </div>
-          <DeleteButton action={deleteAction} />
+          <DeleteButton
+            action={boundDeleteAction}
+            confirmMessage="Delete this expense?"
+          />
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">
-        <ExpenseForm action={updateAction} expense={expense} />
+        <ExpenseForm
+          action={boundUpdateAction}
+          expense={expense}
+          categories={categories}
+        />
       </main>
     </div>
   );

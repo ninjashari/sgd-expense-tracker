@@ -8,13 +8,6 @@
       "when": 1782618541649,
       "tag": "0000_purple_stingray",
       "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1782656745620,
-      "tag": "0001_tricky_sphinx",
-      "breakpoints": true
     }
   ]
 }

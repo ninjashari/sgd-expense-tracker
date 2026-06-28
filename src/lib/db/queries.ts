@@ -1,17 +1,16 @@
 import { db } from "./index";
-import { expenses, trips, users } from "./schema";
-import { eq, and, desc, sql, isNull } from "drizzle-orm";
-import type { Expense, Trip } from "./schema";
+import { expenses, users, categories, trips } from "./schema";
+import { eq, and, desc, sql, count } from "drizzle-orm";
+import type { Expense, CategoryRecord, Trip } from "./schema";
 
 export async function getAllExpenses(
   userId: string,
-  status?: "paid" | "planned",
-  tripId?: string | null
+  tripId: string,
+  status?: "paid" | "planned"
 ): Promise<Expense[]> {
-  const conditions = [eq(expenses.userId, userId)];
-  if (status) conditions.push(eq(expenses.status, status));
-  if (tripId !== undefined) {
-    conditions.push(tripId === null ? isNull(expenses.tripId) : eq(expenses.tripId, tripId));
+  const conditions = [eq(expenses.userId, userId), eq(expenses.tripId, tripId)];
+  if (status) {
+    conditions.push(eq(expenses.status, status));
   }
   return db
     .select()
@@ -31,17 +30,31 @@ export async function getExpenseById(
   return rows[0];
 }
 
-export async function getSummary(userId: string, tripId?: string) {
-  const conditions = [eq(expenses.userId, userId)];
-  if (tripId) conditions.push(eq(expenses.tripId, tripId));
-
+export async function getSummary(userId: string) {
   const rows = await db
     .select({
       totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
       totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
     })
     .from(expenses)
-    .where(and(...conditions));
+    .where(eq(expenses.userId, userId));
+
+  const result = rows[0];
+  return {
+    totalPaid: result?.totalPaid ?? 0,
+    totalPlanned: result?.totalPlanned ?? 0,
+    total: (result?.totalPaid ?? 0) + (result?.totalPlanned ?? 0),
+  };
+}
+
+export async function getTripSummary(tripId: string, userId: string) {
+  const rows = await db
+    .select({
+      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
+      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
+    })
+    .from(expenses)
+    .where(and(eq(expenses.tripId, tripId), eq(expenses.userId, userId)));
 
   const result = rows[0];
   return {
@@ -59,24 +72,43 @@ export async function getUserByUsername(username: string) {
   return rows[0];
 }
 
-export async function getAllTrips(userId: string) {
-  const rows = await db
-    .select({
-      trip: trips,
-      expenseCount: sql<number>`count(${expenses.id})`,
-      totalAmount: sql<number>`coalesce(sum(${expenses.amountInr}), 0)`,
-    })
-    .from(trips)
-    .leftJoin(expenses, eq(trips.id, expenses.tripId))
-    .where(eq(trips.userId, userId))
-    .groupBy(trips.id)
-    .orderBy(desc(trips.updatedAt));
+export async function getCategoriesForUser(
+  userId: string
+): Promise<CategoryRecord[]> {
+  return db
+    .select()
+    .from(categories)
+    .where(eq(categories.userId, userId))
+    .orderBy(categories.name);
+}
 
-  return rows.map((r) => ({
-    ...r.trip,
-    expenseCount: r.expenseCount,
-    totalAmount: r.totalAmount,
-  }));
+export async function getCategoryById(
+  id: string,
+  userId: string
+): Promise<CategoryRecord | undefined> {
+  const rows = await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.id, id), eq(categories.userId, userId)));
+  return rows[0];
+}
+
+export async function getCategoryExpenseCount(
+  categoryId: string
+): Promise<number> {
+  const rows = await db
+    .select({ value: count() })
+    .from(expenses)
+    .where(eq(expenses.category, categoryId));
+  return rows[0]?.value ?? 0;
+}
+
+export async function getTripsForUser(userId: string): Promise<Trip[]> {
+  return db
+    .select()
+    .from(trips)
+    .where(eq(trips.userId, userId))
+    .orderBy(desc(trips.startDate));
 }
 
 export async function getTripById(

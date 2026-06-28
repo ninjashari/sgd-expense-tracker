@@ -9,7 +9,7 @@ import { getTripById } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 
-export default async function EditTripPage({
+export default async function TripSettingsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -21,8 +21,8 @@ export default async function EditTripPage({
   const trip = await getTripById(id, session.user.id);
   if (!trip) notFound();
 
-  const updateAction = updateTrip.bind(null, id);
-  const deleteAction = deleteTrip.bind(null, id);
+  const boundUpdateAction = updateTrip.bind(null, id);
+  const boundDeleteAction = deleteTrip.bind(null, id);
 
   return (
     <div className="min-h-screen pb-8">
@@ -36,14 +36,18 @@ export default async function EditTripPage({
               <ArrowLeft size={20} />
             </Link>
             <h1 className="text-lg font-semibold tracking-tight">
-              Edit Trip
+              Trip Settings
             </h1>
           </div>
-          <DeleteButton action={deleteAction} label="trip" />
+          <DeleteButton
+            action={boundDeleteAction}
+            label="Delete Trip"
+            confirmMessage="Delete this trip and all its expenses?"
+          />
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">
-        <TripForm action={updateAction} trip={trip} />
+        <TripForm action={boundUpdateAction} trip={trip} />
       </main>
     </div>
   );

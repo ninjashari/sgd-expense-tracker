@@ -5,11 +5,16 @@ import { Header } from "@/components/header";
 import { SummaryCards } from "@/components/summary-cards";
 import { FilterTabs } from "@/components/filter-tabs";
 import { ExpenseList } from "@/components/expense-list";
-import { getAllExpenses, getSummary, getTripById } from "@/lib/db/queries";
+import {
+  getAllExpenses,
+  getTripById,
+  getTripSummary,
+  getCategoriesForUser,
+} from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 
-export default async function TripPage({
+export default async function TripDetailPage({
   params,
   searchParams,
 }: {
@@ -28,24 +33,57 @@ export default async function TripPage({
   const validStatus =
     status === "paid" || status === "planned" ? status : undefined;
 
-  const [summary, expenseList] = await Promise.all([
-    getSummary(session.user.id, id),
-    getAllExpenses(session.user.id, validStatus, id),
+  const [summary, expenseList, userCategories] = await Promise.all([
+    getTripSummary(id, session.user.id),
+    getAllExpenses(session.user.id, id, validStatus),
+    getCategoriesForUser(session.user.id),
   ]);
+
+  const categoriesMap: Record<
+    string,
+    { name: string; icon: string; color: string }
+  > = {};
+  for (const cat of userCategories) {
+    categoriesMap[cat.id] = {
+      name: cat.name,
+      icon: cat.icon,
+      color: cat.color,
+    };
+  }
 
   return (
     <div className="min-h-screen pb-8">
-      <Header tripId={id} tripName={trip.name} />
+      <Header
+        title={trip.name}
+        backHref="/"
+        actionHref={`/trips/${id}/add`}
+        actionLabel="Add"
+      />
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-400">{trip.destination}</p>
+          </div>
+          <a
+            href={`/trips/${id}/settings`}
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            Edit Trip
+          </a>
+        </div>
         <SummaryCards
           totalPaid={summary.totalPaid}
           totalPlanned={summary.totalPlanned}
           total={summary.total}
         />
         <Suspense>
-          <FilterTabs />
+          <FilterTabs basePath={`/trips/${id}`} />
         </Suspense>
-        <ExpenseList expenses={expenseList} />
+        <ExpenseList
+          expenses={expenseList}
+          tripId={id}
+          categoriesMap={categoriesMap}
+        />
       </main>
     </div>
   );
