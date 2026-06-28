@@ -92,7 +92,7 @@ export function ExpenseForm({ action, expense }: ExpenseFormProps) {
         <label className="block text-xs font-medium text-gray-500 mb-2">
           Category
         </label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(Object.entries(CATEGORIES) as [Category, (typeof CATEGORIES)[Category]][]).map(
             ([key, cat]) => {
               const Icon = cat.icon;
