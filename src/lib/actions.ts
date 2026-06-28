@@ -91,6 +91,7 @@ export async function addExpense(
     status,
     date,
     notes: notes.trim() || null,
+    paidBy: ((formData.get("paidBy") as string) || "").trim() || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -154,6 +155,7 @@ export async function updateExpense(
       status,
       date,
       notes: notes.trim() || null,
+      paidBy: ((formData.get("paidBy") as string) || "").trim() || null,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
@@ -383,6 +385,50 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
 
   revalidatePath("/categories");
   redirect("/categories");
+}
+
+// ── Import Action ──
+
+export async function importExpenses(
+  tripId: string,
+  items: {
+    description: string;
+    amount: number;
+    currency: string;
+    category: string;
+    status: string;
+    date: string;
+    notes: string | null;
+    paidBy: string | null;
+  }[]
+) {
+  const userId = await getUserId();
+  const now = new Date().toISOString();
+
+  for (const item of items) {
+    const currency = item.currency as Currency;
+    const amountInr = convertToINR(item.amount, currency);
+
+    await db.insert(expenses).values({
+      id: crypto.randomUUID(),
+      userId,
+      tripId,
+      description: item.description,
+      amount: item.amount,
+      currency: item.currency,
+      amountInr,
+      category: item.category,
+      status: item.status,
+      date: item.date,
+      notes: item.notes,
+      paidBy: item.paidBy,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  revalidatePath(`/trips/${tripId}`);
+  return {};
 }
 
 // ── Auth Actions ──

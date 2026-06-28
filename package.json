@@ -32,6 +32,7 @@
     "@types/bcryptjs": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "drizzle-kit": "latest",
     "jsdom": "^29.1.1",

@@ -36,8 +36,8 @@ describe("formatINR", () => {
     expect(formatINR(0)).toBe("₹0.00");
   });
 
-  it("formats large amounts", () => {
-    expect(formatINR(1000000)).toBe("₹1000000.00");
+  it("formats large amounts with Indian grouping", () => {
+    expect(formatINR(1000000)).toBe("₹10,00,000.00");
   });
 });
 

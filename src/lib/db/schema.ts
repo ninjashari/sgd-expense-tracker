@@ -48,6 +48,7 @@ export const expenses = sqliteTable("expenses", {
   status: text("status").notNull(),
   date: text("date").notNull(),
   notes: text("notes"),
+  paidBy: text("paid_by"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

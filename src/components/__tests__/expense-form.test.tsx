@@ -74,6 +74,7 @@ describe("ExpenseForm", () => {
       status: "paid",
       date: "2026-06-28",
       notes: null,
+      paidBy: null,
       createdAt: "",
       updatedAt: "",
     };

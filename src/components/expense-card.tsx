@@ -44,7 +44,7 @@ export function ExpenseCard({
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="font-semibold text-sm">
+                <p className="font-semibold text-sm whitespace-nowrap">
                   {formatINR(expense.amountInr)}
                 </p>
                 {expense.currency !== "INR" && (
@@ -68,6 +68,11 @@ export function ExpenseCard({
               >
                 {expense.status}
               </span>
+              {expense.paidBy && (
+                <span className="text-xs text-gray-400">
+                  · {expense.paidBy}
+                </span>
+              )}
             </div>
           </div>
         </div>

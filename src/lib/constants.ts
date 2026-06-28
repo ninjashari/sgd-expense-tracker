@@ -4,6 +4,8 @@ import {
   Hotel,
   ShoppingBag,
   Ticket,
+  Plane,
+  Stamp,
   Ellipsis,
   Coffee,
   Car,
@@ -13,7 +15,6 @@ import {
   Briefcase,
   Gift,
   MapPin,
-  Plane,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,8 @@ export const ICON_OPTIONS = [
   { key: "hotel", icon: Hotel, label: "Hotel" },
   { key: "shopping-bag", icon: ShoppingBag, label: "Shopping" },
   { key: "ticket", icon: Ticket, label: "Ticket" },
+  { key: "plane", icon: Plane, label: "Plane" },
+  { key: "stamp", icon: Stamp, label: "Visa" },
   { key: "ellipsis", icon: Ellipsis, label: "Other" },
   { key: "coffee", icon: Coffee, label: "Coffee" },
   { key: "car", icon: Car, label: "Car" },
@@ -32,7 +35,6 @@ export const ICON_OPTIONS = [
   { key: "briefcase", icon: Briefcase, label: "Briefcase" },
   { key: "gift", icon: Gift, label: "Gift" },
   { key: "map-pin", icon: MapPin, label: "Location" },
-  { key: "plane", icon: Plane, label: "Plane" },
 ] as const;
 
 export const ICON_MAP: Record<string, LucideIcon> = Object.fromEntries(
@@ -50,6 +52,7 @@ export const COLOR_OPTIONS = [
   { key: "teal", classes: "bg-teal-50 text-teal-700", label: "Teal" },
   { key: "indigo", classes: "bg-indigo-50 text-indigo-700", label: "Indigo" },
   { key: "orange", classes: "bg-orange-50 text-orange-700", label: "Orange" },
+  { key: "sky", classes: "bg-sky-50 text-sky-700", label: "Sky" },
 ] as const;
 
 export const DEFAULT_CATEGORIES = [
@@ -66,6 +69,8 @@ export const DEFAULT_CATEGORIES = [
   },
   { name: "Shopping", icon: "shopping-bag", color: "bg-pink-50 text-pink-700" },
   { name: "Attractions", icon: "ticket", color: "bg-green-50 text-green-700" },
+  { name: "Travel", icon: "plane", color: "bg-sky-50 text-sky-700" },
+  { name: "Visa", icon: "stamp", color: "bg-indigo-50 text-indigo-700" },
   { name: "Other", icon: "ellipsis", color: "bg-gray-50 text-gray-700" },
 ] as const;
 

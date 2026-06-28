@@ -1,12 +1,17 @@
 import { CURRENCIES, type Currency } from "./constants";
 
+const inrFormatter = new Intl.NumberFormat("en-IN", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 export function formatCurrency(amount: number, currency: Currency = "INR") {
   const { symbol } = CURRENCIES[currency];
-  return `${symbol}${amount.toFixed(2)}`;
+  return `${symbol}${inrFormatter.format(amount)}`;
 }
 
 export function formatINR(amount: number) {
-  return `₹${amount.toFixed(2)}`;
+  return `₹${inrFormatter.format(amount)}`;
 }
 
 export function formatDate(dateStr: string) {
