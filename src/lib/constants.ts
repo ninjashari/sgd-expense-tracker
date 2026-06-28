@@ -4,6 +4,8 @@ import {
   Hotel,
   ShoppingBag,
   Ticket,
+  Plane,
+  Stamp,
   Ellipsis,
 } from "lucide-react";
 
@@ -32,6 +34,16 @@ export const CATEGORIES = {
     label: "Attractions",
     icon: Ticket,
     color: "bg-green-50 text-green-700",
+  },
+  travel: {
+    label: "Travel",
+    icon: Plane,
+    color: "bg-sky-50 text-sky-700",
+  },
+  visa: {
+    label: "Visa",
+    icon: Stamp,
+    color: "bg-indigo-50 text-indigo-700",
   },
   other: {
     label: "Other",

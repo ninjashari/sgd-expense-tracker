@@ -15,9 +15,10 @@ interface ParsedRow {
   status: Status;
   date: string;
   notes: string;
+  paidBy: string;
 }
 
-const EXPECTED_HEADERS = ["description", "amount", "currency", "category", "status", "date", "notes"];
+const EXPECTED_HEADERS = ["description", "amount", "currency", "category", "status", "date", "notes", "paidby"];
 const VALID_CATEGORIES = Object.keys(CATEGORIES);
 const VALID_CURRENCIES = Object.keys(CURRENCIES);
 
@@ -54,7 +55,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
   if (lines.length < 2) return { rows: [], errors: ["Need a header row and at least one data row"] };
 
   const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().trim());
-  const missingHeaders = EXPECTED_HEADERS.filter((h) => h !== "notes" && !headers.includes(h));
+  const missingHeaders = EXPECTED_HEADERS.filter((h) => h !== "notes" && h !== "paidby" && !headers.includes(h));
   if (missingHeaders.length > 0) {
     return { rows: [], errors: [`Missing columns: ${missingHeaders.join(", ")}`] };
   }
@@ -109,6 +110,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
       status,
       date,
       notes: idx.notes >= 0 ? fields[idx.notes] || "" : "",
+      paidBy: idx.paidby >= 0 ? fields[idx.paidby] || "" : "",
     });
   }
 
@@ -175,6 +177,7 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
       status: r.status,
       date: r.date,
       notes: r.notes || null,
+      paidBy: r.paidBy || null,
     }));
 
     const result = await importExpenses(expenses);
@@ -237,7 +240,7 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
                 <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder={`description,amount,currency,category,status,date,notes\nBreakfast,250,INR,food,paid,2025-01-15,Hotel buffet`}
+                  placeholder={`description,amount,currency,category,status,date,notes,paidby\nBreakfast,250,INR,food,paid,2025-01-15,Hotel buffet,John`}
                   rows={8}
                   className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm font-mono border-0 outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-300 resize-none"
                 />
@@ -364,12 +367,20 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
                       />
                     </div>
 
-                    <input
-                      value={row.notes}
-                      onChange={(e) => updateRow(i, "notes", e.target.value)}
-                      className="w-full text-xs text-gray-500 bg-transparent outline-none"
-                      placeholder="Notes (optional)"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        value={row.paidBy}
+                        onChange={(e) => updateRow(i, "paidBy", e.target.value)}
+                        className="w-1/3 text-xs text-gray-500 bg-transparent outline-none"
+                        placeholder="Paid by (optional)"
+                      />
+                      <input
+                        value={row.notes}
+                        onChange={(e) => updateRow(i, "notes", e.target.value)}
+                        className="flex-1 text-xs text-gray-500 bg-transparent outline-none"
+                        placeholder="Notes (optional)"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

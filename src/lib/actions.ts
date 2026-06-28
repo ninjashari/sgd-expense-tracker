@@ -34,6 +34,7 @@ export async function addExpense(formData: FormData) {
     status: formData.get("status") as string,
     date: formData.get("date") as string,
     notes: (formData.get("notes") as string) || null,
+    paidBy: (formData.get("paidBy") as string) || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -59,6 +60,7 @@ export async function updateExpense(id: string, formData: FormData) {
       status: formData.get("status") as string,
       date: formData.get("date") as string,
       notes: (formData.get("notes") as string) || null,
+      paidBy: (formData.get("paidBy") as string) || null,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
@@ -86,6 +88,7 @@ export async function importExpenses(items: {
     status: string;
     date: string;
     notes: string | null;
+    paidBy: string | null;
   }[]
 ) {
   const userId = await getUserId();
@@ -106,6 +109,7 @@ export async function importExpenses(items: {
       status: item.status,
       date: item.date,
       notes: item.notes,
+      paidBy: item.paidBy,
       createdAt: now,
       updatedAt: now,
     });

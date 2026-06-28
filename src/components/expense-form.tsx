@@ -92,7 +92,7 @@ export function ExpenseForm({ action, expense }: ExpenseFormProps) {
         <label className="block text-xs font-medium text-gray-500 mb-2">
           Category
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {(Object.entries(CATEGORIES) as [Category, (typeof CATEGORIES)[Category]][]).map(
             ([key, cat]) => {
               const Icon = cat.icon;
@@ -154,6 +154,19 @@ export function ExpenseForm({ action, expense }: ExpenseFormProps) {
           required
           defaultValue={expense?.date || todayISO()}
           className="w-full bg-white rounded-xl px-4 py-3 text-sm shadow-sm border-0 outline-none focus:ring-2 focus:ring-gray-200"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-2">
+          Paid By (optional)
+        </label>
+        <input
+          name="paidBy"
+          type="text"
+          defaultValue={expense?.paidBy || ""}
+          placeholder="Who paid?"
+          className="w-full bg-white rounded-xl px-4 py-3 text-sm shadow-sm border-0 outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-300"
         />
       </div>
 

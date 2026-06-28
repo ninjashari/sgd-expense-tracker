@@ -50,6 +50,11 @@ export function ExpenseCard({ expense }: { expense: Expense }) {
               >
                 {expense.status}
               </span>
+              {expense.paidBy && (
+                <span className="text-xs text-gray-400">
+                  · {expense.paidBy}
+                </span>
+              )}
             </div>
           </div>
         </div>
