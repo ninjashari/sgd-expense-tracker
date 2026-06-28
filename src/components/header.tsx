@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth";
+import { ImportButton } from "./import-button";
 
 export function Header() {
   return (
@@ -8,6 +9,7 @@ export function Header() {
       <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
         <h1 className="text-lg font-semibold tracking-tight">TripKharcha</h1>
         <div className="flex items-center gap-2">
+          <ImportButton />
           <Link
             href="/add"
             className="flex items-center gap-1.5 bg-gray-900 text-white text-sm font-medium px-3 py-2 rounded-xl hover:bg-gray-800 transition-colors"
