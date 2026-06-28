@@ -2,14 +2,14 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { ExpenseForm } from "@/components/expense-form";
+import { TripForm } from "@/components/trip-form";
 import { DeleteButton } from "@/components/delete-button";
-import { updateExpense, deleteExpense } from "@/lib/actions";
-import { getExpenseById } from "@/lib/db/queries";
+import { updateTrip, deleteTrip } from "@/lib/actions";
+import { getTripById } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 
-export default async function EditExpensePage({
+export default async function TripSettingsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -18,11 +18,11 @@ export default async function EditExpensePage({
   if (!session?.user?.id) redirect("/login");
 
   const { id } = await params;
-  const expense = await getExpenseById(id, session.user.id);
-  if (!expense) notFound();
+  const trip = await getTripById(id, session.user.id);
+  if (!trip) notFound();
 
-  const updateAction = updateExpense.bind(null, id);
-  const deleteAction = deleteExpense.bind(null, id);
+  const boundUpdateAction = updateTrip.bind(null, id);
+  const boundDeleteAction = deleteTrip.bind(null, id);
 
   return (
     <div className="min-h-screen pb-8">
@@ -30,20 +30,24 @@ export default async function EditExpensePage({
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/"
+              href={`/trips/${id}`}
               className="p-2 -ml-2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ArrowLeft size={20} />
             </Link>
             <h1 className="text-lg font-semibold tracking-tight">
-              Edit Expense
+              Trip Settings
             </h1>
           </div>
-          <DeleteButton action={deleteAction} />
+          <DeleteButton
+            action={boundDeleteAction}
+            label="Delete Trip"
+            confirmMessage="Delete this trip and all its expenses?"
+          />
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">
-        <ExpenseForm action={updateAction} expense={expense} />
+        <TripForm action={boundUpdateAction} trip={trip} />
       </main>
     </div>
   );

@@ -1,7 +1,17 @@
 import { ExpenseCard } from "./expense-card";
 import type { Expense } from "@/lib/db/schema";
 
-export function ExpenseList({ expenses }: { expenses: Expense[] }) {
+interface ExpenseListProps {
+  expenses: Expense[];
+  tripId: string;
+  categoriesMap: Record<string, { name: string; icon: string; color: string }>;
+}
+
+export function ExpenseList({
+  expenses,
+  tripId,
+  categoriesMap,
+}: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-16">
@@ -16,7 +26,12 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
   return (
     <div className="space-y-3">
       {expenses.map((expense) => (
-        <ExpenseCard key={expense.id} expense={expense} />
+        <ExpenseCard
+          key={expense.id}
+          expense={expense}
+          tripId={tripId}
+          categoriesMap={categoriesMap}
+        />
       ))}
     </div>
   );

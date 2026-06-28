@@ -10,7 +10,7 @@ const tabs = [
   { label: "Planned", value: "planned" },
 ];
 
-export function FilterTabs() {
+export function FilterTabs({ basePath = "/" }: { basePath?: string }) {
   const searchParams = useSearchParams();
   const current = searchParams.get("status") || "";
 
@@ -19,7 +19,11 @@ export function FilterTabs() {
       {tabs.map((tab) => (
         <Link
           key={tab.value}
-          href={tab.value ? `/?status=${tab.value}` : "/"}
+          href={
+            tab.value
+              ? `${basePath}?status=${tab.value}`
+              : basePath
+          }
           className={clsx(
             "px-4 py-2 rounded-xl text-sm font-medium transition-colors",
             current === tab.value
