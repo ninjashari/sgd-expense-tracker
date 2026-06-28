@@ -25,6 +25,7 @@
     "@types/bcryptjs": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
+    "@types/react-dom": "^19.2.3",
     "drizzle-kit": "latest",
     "tailwindcss": "latest",
     "typescript": "latest"
