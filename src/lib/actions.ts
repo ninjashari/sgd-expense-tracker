@@ -78,6 +78,43 @@ export async function deleteExpense(id: string) {
   redirect("/");
 }
 
+export async function importExpenses(items: {
+    description: string;
+    amount: number;
+    currency: string;
+    category: string;
+    status: string;
+    date: string;
+    notes: string | null;
+  }[]
+) {
+  const userId = await getUserId();
+  const now = new Date().toISOString();
+
+  for (const item of items) {
+    const currency = item.currency as Currency;
+    const amountInr = convertToINR(item.amount, currency);
+
+    await db.insert(expenses).values({
+      id: crypto.randomUUID(),
+      userId,
+      description: item.description,
+      amount: item.amount,
+      currency: item.currency,
+      amountInr,
+      category: item.category,
+      status: item.status,
+      date: item.date,
+      notes: item.notes,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  revalidatePath("/");
+  return {};
+}
+
 export async function loginUser(formData: FormData) {
   try {
     await signIn("credentials", {
