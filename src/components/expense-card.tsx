@@ -1,16 +1,31 @@
 import Link from "next/link";
-import { CATEGORIES, STATUS_STYLES } from "@/lib/constants";
+import { STATUS_STYLES, ICON_MAP } from "@/lib/constants";
 import { formatCurrency, formatINR, formatDate } from "@/lib/utils";
 import type { Expense } from "@/lib/db/schema";
-import type { Category, Currency } from "@/lib/constants";
+import type { Currency } from "@/lib/constants";
+import { Ellipsis } from "lucide-react";
 
-export function ExpenseCard({ expense }: { expense: Expense }) {
-  const cat = CATEGORIES[expense.category as Category] || CATEGORIES.other;
-  const Icon = cat.icon;
+interface ExpenseCardProps {
+  expense: Expense;
+  tripId: string;
+  categoriesMap: Record<string, { name: string; icon: string; color: string }>;
+}
+
+export function ExpenseCard({
+  expense,
+  tripId,
+  categoriesMap,
+}: ExpenseCardProps) {
+  const cat = categoriesMap[expense.category] || {
+    name: "Other",
+    icon: "ellipsis",
+    color: "bg-gray-50 text-gray-700",
+  };
+  const Icon = ICON_MAP[cat.icon] || Ellipsis;
   const statusStyle = STATUS_STYLES[expense.status as "paid" | "planned"];
 
   return (
-    <Link href={`/edit/${expense.id}`} className="block">
+    <Link href={`/trips/${tripId}/edit/${expense.id}`} className="block">
       <div className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-start gap-3">
           <div
@@ -34,7 +49,10 @@ export function ExpenseCard({ expense }: { expense: Expense }) {
                 </p>
                 {expense.currency !== "INR" && (
                   <p className="text-xs text-gray-400">
-                    {formatCurrency(expense.amount, expense.currency as Currency)}
+                    {formatCurrency(
+                      expense.amount,
+                      expense.currency as Currency
+                    )}
                   </p>
                 )}
               </div>
@@ -43,7 +61,7 @@ export function ExpenseCard({ expense }: { expense: Expense }) {
               <span
                 className={`text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}
               >
-                {cat.label}
+                {cat.name}
               </span>
               <span
                 className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${statusStyle}`}

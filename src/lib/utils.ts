@@ -31,3 +31,16 @@ export function convertToINR(amount: number, currency: Currency): number {
 export function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
+
+export function getMaxDate(status: "paid" | "planned"): string {
+  const d = new Date();
+  if (status === "planned") {
+    d.setMonth(d.getMonth() + 2);
+  }
+  return d.toISOString().split("T")[0];
+}
+
+export function getMinDate(status: "paid" | "planned"): string {
+  if (status === "paid") return "";
+  return new Date().toISOString().split("T")[0];
+}

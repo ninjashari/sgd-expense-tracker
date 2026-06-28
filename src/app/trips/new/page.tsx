@@ -2,12 +2,12 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { ExpenseForm } from "@/components/expense-form";
-import { addExpense } from "@/lib/actions";
+import { TripForm } from "@/components/trip-form";
+import { addTrip } from "@/lib/actions";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default async function AddExpensePage() {
+export default async function NewTripPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
@@ -21,11 +21,11 @@ export default async function AddExpensePage() {
           >
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-lg font-semibold tracking-tight">Add Expense</h1>
+          <h1 className="text-lg font-semibold tracking-tight">New Trip</h1>
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">
-        <ExpenseForm action={addExpense} />
+        <TripForm action={addTrip} />
       </main>
     </div>
   );

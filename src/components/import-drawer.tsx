@@ -4,14 +4,14 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, Upload, ClipboardPaste, FileUp, Trash2 } from "lucide-react";
 import { importExpenses } from "@/lib/actions";
-import { CATEGORIES, CURRENCIES, type Category, type Currency, type Status } from "@/lib/constants";
+import { CURRENCIES, type Currency, type Status } from "@/lib/constants";
 
 interface ParsedRow {
   selected: boolean;
   description: string;
   amount: string;
   currency: Currency;
-  category: Category;
+  category: string;
   status: Status;
   date: string;
   notes: string;
@@ -19,7 +19,6 @@ interface ParsedRow {
 }
 
 const EXPECTED_HEADERS = ["description", "amount", "currency", "category", "status", "date", "notes", "paidby"];
-const VALID_CATEGORIES = Object.keys(CATEGORIES);
 const VALID_CURRENCIES = Object.keys(CURRENCIES);
 
 function parseCsvLine(line: string): string[] {
@@ -83,9 +82,9 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
       continue;
     }
 
-    const category = fields[idx.category]?.toLowerCase() as Category;
-    if (!VALID_CATEGORIES.includes(category)) {
-      errors.push(`Row ${i}: invalid category "${fields[idx.category]}"`);
+    const category = fields[idx.category]?.trim() || "";
+    if (!category) {
+      errors.push(`Row ${i}: missing category`);
       continue;
     }
 
@@ -117,7 +116,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
   return { rows, errors };
 }
 
-export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ImportDrawer({ open, onClose, tripId }: { open: boolean; onClose: () => void; tripId: string }) {
   const [mode, setMode] = useState<"paste" | "file">("paste");
   const [text, setText] = useState("");
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -180,7 +179,7 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
       paidBy: r.paidBy || null,
     }));
 
-    const result = await importExpenses(expenses);
+    const result = await importExpenses(tripId, expenses);
     setImporting(false);
 
     if (result && "error" in result && result.error) {
@@ -342,15 +341,12 @@ export function ImportDrawer({ open, onClose }: { open: boolean; onClose: () => 
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
-                      <select
+                      <input
                         value={row.category}
                         onChange={(e) => updateRow(i, "category", e.target.value)}
                         className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
-                      >
-                        {Object.entries(CATEGORIES).map(([k, v]) => (
-                          <option key={k} value={k}>{v.label}</option>
-                        ))}
-                      </select>
+                        placeholder="Category"
+                      />
                       <select
                         value={row.status}
                         onChange={(e) => updateRow(i, "status", e.target.value)}
