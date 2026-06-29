@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { SummaryCards } from "@/components/summary-cards";
 import { FilterTabs } from "@/components/filter-tabs";
 import { ExpenseList } from "@/components/expense-list";
+import { CategoryBreakdown } from "@/components/category-breakdown";
 import { ImportButton } from "@/components/import-button";
 import {
   getAllExpenses,
@@ -20,7 +21,7 @@ export default async function TripDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; view?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -30,13 +31,14 @@ export default async function TripDetailPage({
   if (!trip) notFound();
 
   const sp = await searchParams;
+  const isCategoryView = sp.view === "categories";
   const status = sp.status as "paid" | "planned" | undefined;
   const validStatus =
     status === "paid" || status === "planned" ? status : undefined;
 
   const [summary, expenseList, userCategories] = await Promise.all([
     getTripSummary(id, session.user.id),
-    getAllExpenses(session.user.id, id, validStatus),
+    getAllExpenses(session.user.id, id, isCategoryView ? undefined : validStatus),
     getCategoriesForUser(session.user.id),
   ]);
 
@@ -83,11 +85,18 @@ export default async function TripDetailPage({
         <Suspense>
           <FilterTabs basePath={`/trips/${id}`} />
         </Suspense>
-        <ExpenseList
-          expenses={expenseList}
-          tripId={id}
-          categoriesMap={categoriesMap}
-        />
+        {isCategoryView ? (
+          <CategoryBreakdown
+            expenses={expenseList}
+            categoriesMap={categoriesMap}
+          />
+        ) : (
+          <ExpenseList
+            expenses={expenseList}
+            tripId={id}
+            categoriesMap={categoriesMap}
+          />
+        )}
       </main>
     </div>
   );
