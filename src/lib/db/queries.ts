@@ -64,6 +64,56 @@ export async function getTripSummary(tripId: string, userId: string) {
   };
 }
 
+export type CategoryBreakdownItem = {
+  categoryId: string;
+  total: number;
+};
+
+export async function getAllTripsTotals(
+  userId: string
+): Promise<Record<string, number>> {
+  const rows = await db
+    .select({
+      tripId: expenses.tripId,
+      total: sql<number>`coalesce(sum(${expenses.amount}), 0)`,
+    })
+    .from(expenses)
+    .where(eq(expenses.userId, userId))
+    .groupBy(expenses.tripId);
+
+  const result: Record<string, number> = {};
+  for (const row of rows) {
+    result[row.tripId] = row.total;
+  }
+  return result;
+}
+
+export async function getAllTripsCategoryBreakdown(
+  userId: string
+): Promise<Record<string, CategoryBreakdownItem[]>> {
+  const rows = await db
+    .select({
+      tripId: expenses.tripId,
+      categoryId: expenses.category,
+      total: sql<number>`coalesce(sum(${expenses.amount}), 0)`,
+    })
+    .from(expenses)
+    .where(eq(expenses.userId, userId))
+    .groupBy(expenses.tripId, expenses.category);
+
+  const result: Record<string, CategoryBreakdownItem[]> = {};
+  for (const row of rows) {
+    if (!result[row.tripId]) {
+      result[row.tripId] = [];
+    }
+    result[row.tripId].push({
+      categoryId: row.categoryId,
+      total: row.total,
+    });
+  }
+  return result;
+}
+
 export async function getUserByUsername(username: string) {
   const rows = await db
     .select()
