@@ -15,7 +15,7 @@ export function CategoryBreakdown({
 }: CategoryBreakdownProps) {
   const totals: Record<string, number> = {};
   for (const exp of expenses) {
-    totals[exp.category] = (totals[exp.category] ?? 0) + exp.amount;
+    totals[exp.category] = (totals[exp.category] ?? 0) + exp.amountInr;
   }
 
   const breakdown = Object.entries(totals)
