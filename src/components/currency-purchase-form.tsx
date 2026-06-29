@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState } from "react";
 import { CURRENCIES, CURRENCY_SOURCE_STYLES } from "@/lib/constants";
 import { todayISO } from "@/lib/utils";
 import type { ActionResult } from "@/lib/action-helpers";
@@ -20,6 +20,15 @@ interface CurrencyPurchaseFormProps {
   purchase?: CurrencyPurchase;
   defaultFromCurrency?: string;
   defaultToCurrency?: string;
+}
+
+function computeRate(fromStr: string, toStr: string): string {
+  const from = parseFloat(fromStr);
+  const to = parseFloat(toStr);
+  if (!isNaN(from) && !isNaN(to) && to > 0) {
+    return (from / to).toFixed(2);
+  }
+  return "";
 }
 
 export function CurrencyPurchaseForm({
@@ -50,59 +59,18 @@ export function CurrencyPurchaseForm({
   const [toAmount, setToAmount] = useState(
     purchase?.toAmount?.toString() || ""
   );
-  const [rate, setRate] = useState(purchase?.rate?.toString() || "");
-  const [lastEdited, setLastEdited] = useState<
-    "fromAmount" | "toAmount" | "rate" | null
-  >(null);
-
-  useEffect(() => {
-    const from = parseFloat(fromAmount);
-    const to = parseFloat(toAmount);
-    const r = parseFloat(rate);
-
-    if (lastEdited === "fromAmount" && !isNaN(from) && !isNaN(r) && r > 0) {
-      setToAmount((from / r).toFixed(4).replace(/\.?0+$/, ""));
-    } else if (
-      lastEdited === "toAmount" &&
-      !isNaN(to) &&
-      !isNaN(r) &&
-      r > 0
-    ) {
-      setFromAmount((to * r).toFixed(4).replace(/\.?0+$/, ""));
-    } else if (
-      lastEdited === "rate" &&
-      !isNaN(from) &&
-      from > 0 &&
-      !isNaN(r) &&
-      r > 0
-    ) {
-      setToAmount((from / r).toFixed(4).replace(/\.?0+$/, ""));
-    }
-  }, [fromAmount, toAmount, rate, lastEdited]);
+  const [rate, setRate] = useState(
+    purchase?.rate?.toFixed(2) || ""
+  );
 
   function handleFromAmountChange(val: string) {
     setFromAmount(val);
-    setLastEdited("fromAmount");
-    const from = parseFloat(val);
-    const to = parseFloat(toAmount);
-    if (!isNaN(from) && !isNaN(to) && to > 0) {
-      setRate((from / to).toFixed(6).replace(/\.?0+$/, ""));
-    }
+    setRate(computeRate(val, toAmount));
   }
 
   function handleToAmountChange(val: string) {
     setToAmount(val);
-    setLastEdited("toAmount");
-    const from = parseFloat(fromAmount);
-    const to = parseFloat(val);
-    if (!isNaN(from) && !isNaN(to) && to > 0) {
-      setRate((from / to).toFixed(6).replace(/\.?0+$/, ""));
-    }
-  }
-
-  function handleRateChange(val: string) {
-    setRate(val);
-    setLastEdited("rate");
+    setRate(computeRate(fromAmount, val));
   }
 
   return (
@@ -260,16 +228,10 @@ export function CurrencyPurchaseForm({
         <label className="block text-xs font-medium text-gray-500 mb-2">
           Rate (1 {toCurrency || "?"} = {fromCurrency})
         </label>
-        <input
-          name="rate"
-          type="text"
-          inputMode="decimal"
-          required
-          value={rate}
-          onChange={(e) => handleRateChange(e.target.value)}
-          placeholder="0.00"
-          className="w-full bg-white rounded-xl px-4 py-3 text-sm shadow-sm border-0 outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-300"
-        />
+        <div className="w-full bg-gray-100 rounded-xl px-4 py-3 text-sm text-gray-600">
+          {rate || "—"}
+        </div>
+        <input type="hidden" name="rate" value={rate} />
         {fieldErrors?.rate && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.rate}</p>
         )}
