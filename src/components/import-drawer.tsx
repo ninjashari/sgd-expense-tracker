@@ -4,14 +4,13 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, Upload, ClipboardPaste, FileUp, Trash2 } from "lucide-react";
 import { importExpenses } from "@/lib/actions";
-import { CURRENCIES, type Currency, type Status } from "@/lib/constants";
+import type { Status } from "@/lib/constants";
 import type { CategoryRecord } from "@/lib/db/schema";
 
 interface ParsedRow {
   selected: boolean;
   description: string;
   amount: string;
-  currency: Currency;
   category: string;
   status: Status;
   date: string;
@@ -19,8 +18,7 @@ interface ParsedRow {
   paidBy: string;
 }
 
-const EXPECTED_HEADERS = ["description", "amount", "currency", "category", "status", "date", "notes", "paidby"];
-const VALID_CURRENCIES = Object.keys(CURRENCIES);
+const EXPECTED_HEADERS = ["description", "amount", "category", "status", "date", "notes", "paidby"];
 
 function parseCsvLine(line: string): string[] {
   const fields: string[] = [];
@@ -66,7 +64,7 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
 
   for (let i = 1; i < lines.length; i++) {
     const fields = parseCsvLine(lines[i]);
-    if (fields.length < 6) {
+    if (fields.length < 5) {
       errors.push(`Row ${i}: not enough columns`);
       continue;
     }
@@ -74,12 +72,6 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
     const amount = parseFloat(fields[idx.amount]);
     if (isNaN(amount) || amount <= 0) {
       errors.push(`Row ${i}: invalid amount "${fields[idx.amount]}"`);
-      continue;
-    }
-
-    const currency = fields[idx.currency]?.toUpperCase() as Currency;
-    if (!VALID_CURRENCIES.includes(currency)) {
-      errors.push(`Row ${i}: invalid currency "${fields[idx.currency]}"`);
       continue;
     }
 
@@ -105,7 +97,6 @@ function parseCsv(text: string): { rows: ParsedRow[]; errors: string[] } {
       selected: true,
       description: fields[idx.description] || "",
       amount: amount.toString(),
-      currency,
       category,
       status,
       date,
@@ -185,7 +176,6 @@ export function ImportDrawer({ open, onClose, tripId, categories }: { open: bool
     const expenses = selected.map((r) => ({
       description: r.description,
       amount: parseFloat(r.amount),
-      currency: r.currency,
       category: resolveCategoryId(r.category)!,
       status: r.status,
       date: r.date,
@@ -253,7 +243,7 @@ export function ImportDrawer({ open, onClose, tripId, categories }: { open: bool
                 <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder={`description,amount,currency,category,status,date,notes,paidby\nBreakfast,250,INR,food,paid,2025-01-15,Hotel buffet,John`}
+                  placeholder={`description,amount,category,status,date,notes,paidby\nBreakfast,250,Food & Drink,paid,2025-01-15,Hotel buffet,John`}
                   rows={8}
                   className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm font-mono border-0 outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-300 resize-none"
                 />
@@ -337,7 +327,7 @@ export function ImportDrawer({ open, onClose, tripId, categories }: { open: bool
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <input
                         type="number"
                         step="0.01"
@@ -346,15 +336,6 @@ export function ImportDrawer({ open, onClose, tripId, categories }: { open: bool
                         className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-gray-200"
                         placeholder="Amount"
                       />
-                      <select
-                        value={row.currency}
-                        onChange={(e) => updateRow(i, "currency", e.target.value)}
-                        className="min-w-0 text-xs bg-gray-50 rounded-lg px-2 py-1.5 outline-none"
-                      >
-                        {Object.keys(CURRENCIES).map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
                       <select
                         value={row.category}
                         onChange={(e) => updateRow(i, "category", e.target.value)}

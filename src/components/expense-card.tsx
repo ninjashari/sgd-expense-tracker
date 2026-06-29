@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { STATUS_STYLES, ICON_MAP } from "@/lib/constants";
-import { formatCurrency, formatINR, formatDate } from "@/lib/utils";
+import { formatINR, formatDate } from "@/lib/utils";
 import type { Expense } from "@/lib/db/schema";
-import type { Currency } from "@/lib/constants";
 import { Ellipsis } from "lucide-react";
 
 interface ExpenseCardProps {
@@ -45,16 +44,8 @@ export function ExpenseCard({
               </div>
               <div className="text-right shrink-0">
                 <p className="font-semibold text-sm whitespace-nowrap">
-                  {formatINR(expense.amountInr)}
+                  {formatINR(expense.amount)}
                 </p>
-                {expense.currency !== "INR" && (
-                  <p className="text-xs text-gray-400">
-                    {formatCurrency(
-                      expense.amount,
-                      expense.currency as Currency
-                    )}
-                  </p>
-                )}
               </div>
             </div>
             <div className="flex items-center gap-2 mt-2">

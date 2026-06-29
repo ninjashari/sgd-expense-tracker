@@ -1,11 +1,9 @@
 "use client";
 
 import { useActionState, useState, useEffect } from "react";
-import { CURRENCIES, ICON_MAP, ICON_OPTIONS, COLOR_OPTIONS } from "@/lib/constants";
+import { ICON_MAP, ICON_OPTIONS, COLOR_OPTIONS } from "@/lib/constants";
 import {
   todayISO,
-  convertToINR,
-  formatINR,
   getMaxDate,
   getMinDate,
 } from "@/lib/utils";
@@ -16,7 +14,7 @@ import {
   validateCategoryName,
 } from "@/lib/validations";
 import type { Expense, CategoryRecord } from "@/lib/db/schema";
-import type { Currency, Status } from "@/lib/constants";
+import type { Status } from "@/lib/constants";
 import type { ActionResult } from "@/lib/action-helpers";
 import { addCategory } from "@/lib/actions";
 import { Ellipsis, Plus, X } from "lucide-react";
@@ -41,9 +39,6 @@ export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
   const [status, setStatus] = useState<Status>(
     (expense?.status as Status) || "planned"
   );
-  const [currency, setCurrency] = useState<Currency>(
-    (expense?.currency as Currency) || "INR"
-  );
   const [amount, setAmount] = useState(expense?.amount?.toString() || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -61,11 +56,6 @@ export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
     if (min && dateValue < min) setDateValue(min);
     if (max && dateValue > max) setDateValue(max);
   }, [status]);
-
-  const inrPreview =
-    currency !== "INR" && amount
-      ? convertToINR(parseFloat(amount) || 0, currency)
-      : null;
 
   function validateField(name: string, value: string) {
     let err: string | null = null;
@@ -113,49 +103,24 @@ export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
 
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-2">
-            Amount
+            Amount (₹)
           </label>
-          <div className="flex gap-2">
-            <div className="flex bg-white rounded-xl shadow-sm overflow-hidden">
-              {(Object.keys(CURRENCIES) as Currency[]).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCurrency(c)}
-                  className={clsx(
-                    "px-3 py-3 text-sm font-medium transition-colors",
-                    currency === c
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-400 hover:text-gray-600"
-                  )}
-                >
-                  {CURRENCIES[c].symbol}
-                </button>
-              ))}
-            </div>
-            <input
-              name="amount"
-              type="text"
-              inputMode="decimal"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onBlur={(e) => validateField("amount", e.target.value)}
-              placeholder="0.00"
-              className="flex-1 bg-white rounded-xl px-4 py-3 text-sm shadow-sm border-0 outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-300"
-            />
-          </div>
-          {inrPreview !== null && (
-            <p className="text-xs text-gray-400 mt-1.5 ml-1">
-              ≈ {formatINR(inrPreview)}
-            </p>
-          )}
+          <input
+            name="amount"
+            type="text"
+            inputMode="decimal"
+            required
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            onBlur={(e) => validateField("amount", e.target.value)}
+            placeholder="0.00"
+            className="w-full bg-white rounded-xl px-4 py-3 text-sm shadow-sm border-0 outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-300"
+          />
           {(errors.amount || fieldErrors?.amount) && (
             <p className="text-xs text-red-500 mt-1">
               {errors.amount || fieldErrors?.amount}
             </p>
           )}
-          <input type="hidden" name="currency" value={currency} />
         </div>
 
         <div>

@@ -67,9 +67,9 @@ describe("ExpenseForm", () => {
       userId: "user-1",
       tripId: "trip-1",
       description: "Lunch",
-      amount: 15,
-      currency: "SGD",
-      amountInr: 937.5,
+      amount: 500,
+      currency: "INR",
+      amountInr: 500,
       category: "cat-1",
       status: "paid",
       date: "2026-06-28",
@@ -104,17 +104,6 @@ describe("ExpenseForm", () => {
     expect(statusInputs[0]).toHaveValue("planned");
   });
 
-  it("toggles currency buttons", async () => {
-    const user = userEvent.setup();
-    render(<ExpenseForm action={mockAction} categories={mockCategories} />);
-
-    const sgdBtn = screen.getAllByRole("button", { name: "S$" })[0];
-    await user.click(sgdBtn);
-
-    const currencyInputs = document.querySelectorAll('input[name="currency"]');
-    expect(currencyInputs[0]).toHaveValue("SGD");
-  });
-
   it("selects category on click", async () => {
     const user = userEvent.setup();
     render(<ExpenseForm action={mockAction} categories={mockCategories} />);
@@ -146,20 +135,5 @@ describe("ExpenseForm", () => {
     await user.tab();
 
     expect(screen.getAllByText(/valid number/i).length).toBeGreaterThan(0);
-  });
-
-  it("shows INR preview for non-INR currency", async () => {
-    const user = userEvent.setup();
-    render(<ExpenseForm action={mockAction} categories={mockCategories} />);
-
-    const sgdBtn = screen.getAllByRole("button", { name: "S$" })[0];
-    await user.click(sgdBtn);
-
-    const amountInput = screen.getAllByPlaceholderText("0.00")[0];
-    await user.clear(amountInput);
-    await user.type(amountInput, "10");
-
-    const body = document.body.textContent || "";
-    expect(body).toContain("625.00");
   });
 });

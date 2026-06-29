@@ -33,8 +33,8 @@ export async function getExpenseById(
 export async function getSummary(userId: string) {
   const rows = await db
     .select({
-      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
-      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
+      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amount} else 0 end), 0)`,
+      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amount} else 0 end), 0)`,
     })
     .from(expenses)
     .where(eq(expenses.userId, userId));
@@ -50,8 +50,8 @@ export async function getSummary(userId: string) {
 export async function getTripSummary(tripId: string, userId: string) {
   const rows = await db
     .select({
-      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
-      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
+      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amount} else 0 end), 0)`,
+      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amount} else 0 end), 0)`,
     })
     .from(expenses)
     .where(and(eq(expenses.tripId, tripId), eq(expenses.userId, userId)));

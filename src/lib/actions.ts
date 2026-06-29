@@ -8,8 +8,6 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "./auth";
 import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
-import { convertToINR } from "./utils";
-import type { Currency } from "./constants";
 import { DEFAULT_CATEGORIES, ICON_MAP, COLOR_OPTIONS } from "./constants";
 import type { ActionResult } from "./action-helpers";
 import {
@@ -45,7 +43,6 @@ export async function addExpense(
 
   const description = (formData.get("description") as string) || "";
   const amountStr = (formData.get("amount") as string) || "";
-  const currency = (formData.get("currency") as Currency) || "INR";
   const categoryId = (formData.get("category") as string) || "";
   const status = (formData.get("status") as string) || "";
   const date = (formData.get("date") as string) || "";
@@ -77,7 +74,6 @@ export async function addExpense(
   }
 
   const amount = parseFloat(amountStr);
-  const amountInr = convertToINR(amount, currency);
 
   await db.insert(expenses).values({
     id: crypto.randomUUID(),
@@ -85,8 +81,8 @@ export async function addExpense(
     tripId,
     description: description.trim(),
     amount,
-    currency,
-    amountInr,
+    currency: "INR",
+    amountInr: amount,
     category: categoryId,
     status,
     date,
@@ -110,7 +106,6 @@ export async function updateExpense(
 
   const description = (formData.get("description") as string) || "";
   const amountStr = (formData.get("amount") as string) || "";
-  const currency = (formData.get("currency") as Currency) || "INR";
   const categoryId = (formData.get("category") as string) || "";
   const status = (formData.get("status") as string) || "";
   const date = (formData.get("date") as string) || "";
@@ -142,15 +137,14 @@ export async function updateExpense(
   }
 
   const amount = parseFloat(amountStr);
-  const amountInr = convertToINR(amount, currency);
 
   await db
     .update(expenses)
     .set({
       description: description.trim(),
       amount,
-      currency,
-      amountInr,
+      currency: "INR",
+      amountInr: amount,
       category: categoryId,
       status,
       date,
@@ -268,7 +262,7 @@ export async function updateTrip(
 
   revalidatePath("/");
   revalidatePath(`/trips/${id}`);
-  redirect(`/trips/${id}/settings`);
+  redirect(`/trips/${id}`);
 }
 
 export async function deleteTrip(id: string) {
@@ -394,7 +388,6 @@ export async function importExpenses(
   items: {
     description: string;
     amount: number;
-    currency: string;
     category: string;
     status: string;
     date: string;
@@ -406,17 +399,14 @@ export async function importExpenses(
   const now = new Date().toISOString();
 
   for (const item of items) {
-    const currency = item.currency as Currency;
-    const amountInr = convertToINR(item.amount, currency);
-
     await db.insert(expenses).values({
       id: crypto.randomUUID(),
       userId,
       tripId,
       description: item.description,
       amount: item.amount,
-      currency: item.currency,
-      amountInr,
+      currency: "INR",
+      amountInr: item.amount,
       category: item.category,
       status: item.status,
       date: item.date,

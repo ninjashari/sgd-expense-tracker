@@ -85,12 +85,6 @@ export const DEFAULT_CATEGORIES = [
   { name: "Other", icon: "ellipsis", color: "bg-gray-50 text-gray-700" },
 ] as const;
 
-export const CURRENCIES = {
-  INR: { label: "INR", symbol: "₹", rate: 1 },
-  SGD: { label: "SGD", symbol: "S$", rate: 62.5 },
-} as const;
-
-export type Currency = keyof typeof CURRENCIES;
 
 export const STATUS_STYLES = {
   paid: "bg-emerald-50 text-emerald-700",
