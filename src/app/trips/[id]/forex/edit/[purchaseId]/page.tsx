@@ -2,41 +2,37 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { ExpenseForm } from "@/components/expense-form";
+import { CurrencyPurchaseForm } from "@/components/currency-purchase-form";
 import { DeleteButton } from "@/components/delete-button";
-import { updateExpense, deleteExpense } from "@/lib/actions";
 import {
-  getExpenseById,
-  getCategoriesForUser,
-  getTripById,
-  getAvailableCurrencies,
-} from "@/lib/db/queries";
+  updateCurrencyPurchase,
+  deleteCurrencyPurchase,
+} from "@/lib/actions";
+import { getCurrencyPurchaseById, getTripById } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 
-export default async function EditExpensePage({
+export default async function EditForexPage({
   params,
 }: {
-  params: Promise<{ id: string; expenseId: string }>;
+  params: Promise<{ id: string; purchaseId: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const { id, expenseId } = await params;
+  const { id, purchaseId } = await params;
   const trip = await getTripById(id, session.user.id);
   if (!trip) notFound();
 
-  const [expense, categories, availableCurrencies] = await Promise.all([
-    getExpenseById(expenseId, session.user.id),
-    getCategoriesForUser(session.user.id),
-    trip.foreignCurrency
-      ? getAvailableCurrencies(id, session.user.id)
-      : Promise.resolve([]),
-  ]);
-  if (!expense) notFound();
+  const purchase = await getCurrencyPurchaseById(purchaseId, session.user.id);
+  if (!purchase) notFound();
 
-  const boundUpdateAction = updateExpense.bind(null, expenseId, id);
-  const boundDeleteAction = deleteExpense.bind(null, expenseId);
+  const boundUpdateAction = updateCurrencyPurchase.bind(
+    null,
+    purchaseId,
+    id
+  );
+  const boundDeleteAction = deleteCurrencyPurchase.bind(null, purchaseId);
 
   return (
     <div className="min-h-screen pb-8">
@@ -44,28 +40,25 @@ export default async function EditExpensePage({
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href={`/trips/${id}`}
+              href={`/trips/${id}?view=forex`}
               className="p-2 -ml-2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <ArrowLeft size={20} />
             </Link>
             <h1 className="text-lg font-semibold tracking-tight">
-              Edit Expense
+              Edit Exchange
             </h1>
           </div>
           <DeleteButton
             action={boundDeleteAction}
-            confirmMessage="Delete this expense?"
+            confirmMessage="Delete this exchange?"
           />
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">
-        <ExpenseForm
+        <CurrencyPurchaseForm
           action={boundUpdateAction}
-          expense={expense}
-          categories={categories}
-          foreignCurrency={trip.foreignCurrency}
-          availableCurrencies={availableCurrencies}
+          purchase={purchase}
         />
       </main>
     </div>

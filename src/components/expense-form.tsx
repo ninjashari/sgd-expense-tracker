@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState, useState, useEffect } from "react";
-import { ICON_MAP, ICON_OPTIONS, COLOR_OPTIONS } from "@/lib/constants";
+import { ICON_MAP, ICON_OPTIONS, COLOR_OPTIONS, CURRENCY_MAP } from "@/lib/constants";
 import {
   todayISO,
   getMaxDate,
   getMinDate,
+  formatCurrency,
+  formatINR,
 } from "@/lib/utils";
 import {
   validateDescription,
@@ -27,9 +29,17 @@ interface ExpenseFormProps {
   ) => Promise<ActionResult>;
   expense?: Expense;
   categories: CategoryRecord[];
+  foreignCurrency?: string | null;
+  availableCurrencies?: string[];
 }
 
-export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
+export function ExpenseForm({
+  action,
+  expense,
+  categories,
+  foreignCurrency,
+  availableCurrencies = [],
+}: ExpenseFormProps) {
   const [state, formAction, isPending] = useActionState(action, null);
   const fieldErrors =
     state && !state.success ? state.fieldErrors : undefined;
@@ -45,6 +55,22 @@ export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
   const [localCategories, setLocalCategories] =
     useState<CategoryRecord[]>(categories);
   const [dateValue, setDateValue] = useState(expense?.date || todayISO());
+
+  const currencyOptions = buildCurrencyOptions(
+    foreignCurrency,
+    availableCurrencies
+  );
+  const hasCurrencyChoice = currencyOptions.length > 1;
+  const [currency, setCurrency] = useState(
+    expense?.currency || (hasCurrencyChoice ? currencyOptions[0] : "INR")
+  );
+  const [currencySource, setCurrencySource] = useState<"notes" | "card">(
+    (expense?.currencySource as "notes" | "card") || "notes"
+  );
+  const isForeign = currency !== "INR";
+  const currencySymbol = isForeign
+    ? CURRENCY_MAP[currency]?.symbol ?? currency
+    : "₹";
 
   useEffect(() => {
     setLocalCategories(categories);
@@ -101,9 +127,38 @@ export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
           )}
         </div>
 
+        {hasCurrencyChoice && (
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-2">
+              Currency
+            </label>
+            <div className="flex gap-2">
+              {currencyOptions.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCurrency(c)}
+                  className={clsx(
+                    "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                    currency === c
+                      ? "bg-gray-900 text-white shadow-md"
+                      : "bg-white text-gray-400 shadow-sm hover:shadow"
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="currency" value={currency} />
+          </div>
+        )}
+        {!hasCurrencyChoice && (
+          <input type="hidden" name="currency" value="INR" />
+        )}
+
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-2">
-            Amount (₹)
+            Amount ({currencySymbol})
           </label>
           <input
             name="amount"
@@ -122,6 +177,40 @@ export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
             </p>
           )}
         </div>
+
+        {isForeign && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-2">
+                Payment Source
+              </label>
+              <div className="flex gap-2">
+                {(["notes", "card"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setCurrencySource(s)}
+                    className={clsx(
+                      "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                      currencySource === s
+                        ? s === "notes"
+                          ? "bg-green-100 text-green-700 shadow-md ring-2 ring-offset-1 ring-green-600"
+                          : "bg-blue-100 text-blue-700 shadow-md ring-2 ring-offset-1 ring-blue-600"
+                        : "bg-white text-gray-400 shadow-sm hover:shadow"
+                    )}
+                  >
+                    {s === "notes" ? "Cash (Notes)" : "Forex Card"}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="hidden"
+                name="currencySource"
+                value={currencySource}
+              />
+            </div>
+          </>
+        )}
 
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-2">
@@ -269,6 +358,16 @@ export function ExpenseForm({ action, expense, categories }: ExpenseFormProps) {
       )}
     </>
   );
+}
+
+function buildCurrencyOptions(
+  foreignCurrency: string | null | undefined,
+  availableCurrencies: string[]
+): string[] {
+  const set = new Set<string>(["INR"]);
+  if (foreignCurrency) set.add(foreignCurrency);
+  for (const c of availableCurrencies) set.add(c);
+  return Array.from(set);
 }
 
 function InlineCategoryModal({

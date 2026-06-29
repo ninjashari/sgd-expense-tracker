@@ -1,3 +1,5 @@
+import { CURRENCY_MAP } from "./constants";
+
 const inrFormatter = new Intl.NumberFormat("en-IN", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -5,6 +7,19 @@ const inrFormatter = new Intl.NumberFormat("en-IN", {
 
 export function formatINR(amount: number) {
   return `₹${inrFormatter.format(amount)}`;
+}
+
+const NO_DECIMAL_CURRENCIES = ["JPY", "VND", "IDR", "KRW"];
+
+export function formatCurrency(amount: number, currencyCode: string): string {
+  if (currencyCode === "INR") return formatINR(amount);
+  const symbol = CURRENCY_MAP[currencyCode]?.symbol ?? currencyCode;
+  const decimals = NO_DECIMAL_CURRENCIES.includes(currencyCode) ? 0 : 2;
+  const formatted = new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount);
+  return `${symbol}${formatted}`;
 }
 
 export function formatDate(dateStr: string) {

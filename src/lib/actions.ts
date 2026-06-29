@@ -1,14 +1,25 @@
 "use server";
 
 import { db } from "./db/index";
-import { expenses, users, categories, trips } from "./db/schema";
+import {
+  expenses,
+  users,
+  categories,
+  trips,
+  currencyPurchases,
+} from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "./auth";
 import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
-import { DEFAULT_CATEGORIES, ICON_MAP, COLOR_OPTIONS } from "./constants";
+import {
+  DEFAULT_CATEGORIES,
+  ICON_MAP,
+  COLOR_OPTIONS,
+  CURRENCY_CODES,
+} from "./constants";
 import type { ActionResult } from "./action-helpers";
 import {
   validateDescription,
@@ -23,8 +34,16 @@ import {
   validateCategoryName,
   validateUsername,
   validatePassword,
+  validateExchangeRate,
+  validateCurrencySource,
+  validatePurchaseType,
+  validateCurrencyCode,
 } from "./validations";
-import { getCategoriesForUser, getCategoryExpenseCount } from "./db/queries";
+import {
+  getCategoriesForUser,
+  getCategoryExpenseCount,
+  getForexBalancesAndRates,
+} from "./db/queries";
 
 async function getUserId() {
   const session = await auth();
@@ -74,6 +93,16 @@ export async function addExpense(
   }
 
   const amount = parseFloat(amountStr);
+  const currency = (formData.get("currency") as string) || "INR";
+  const currencySource =
+    (formData.get("currencySource") as string) || null;
+  const amountInrStr = formData.get("amountInr") as string;
+  const amountInr =
+    currency === "INR"
+      ? amount
+      : amountInrStr
+        ? parseFloat(amountInrStr)
+        : amount;
 
   await db.insert(expenses).values({
     id: crypto.randomUUID(),
@@ -81,13 +110,14 @@ export async function addExpense(
     tripId,
     description: description.trim(),
     amount,
-    currency: "INR",
-    amountInr: amount,
+    currency,
+    amountInr,
     category: categoryId,
     status,
     date,
     notes: notes.trim() || null,
     paidBy: ((formData.get("paidBy") as string) || "").trim() || null,
+    currencySource: currency !== "INR" ? currencySource : null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -137,19 +167,30 @@ export async function updateExpense(
   }
 
   const amount = parseFloat(amountStr);
+  const currency = (formData.get("currency") as string) || "INR";
+  const currencySource =
+    (formData.get("currencySource") as string) || null;
+  const amountInrStr = formData.get("amountInr") as string;
+  const amountInr =
+    currency === "INR"
+      ? amount
+      : amountInrStr
+        ? parseFloat(amountInrStr)
+        : amount;
 
   await db
     .update(expenses)
     .set({
       description: description.trim(),
       amount,
-      currency: "INR",
-      amountInr: amount,
+      currency,
+      amountInr,
       category: categoryId,
       status,
       date,
       notes: notes.trim() || null,
       paidBy: ((formData.get("paidBy") as string) || "").trim() || null,
+      currencySource: currency !== "INR" ? currencySource : null,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(expenses.id, id), eq(expenses.userId, userId)));
@@ -205,6 +246,12 @@ export async function addTrip(
     };
   }
 
+  const foreignCurrency =
+    ((formData.get("foreignCurrency") as string) || "").trim() || null;
+  if (foreignCurrency && !CURRENCY_CODES.includes(foreignCurrency)) {
+    return { success: false, error: "Invalid foreign currency" };
+  }
+
   const tripId = crypto.randomUUID();
   await db.insert(trips).values({
     id: tripId,
@@ -213,6 +260,7 @@ export async function addTrip(
     destination: destination.trim(),
     startDate,
     endDate,
+    foreignCurrency,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -249,6 +297,12 @@ export async function updateTrip(
     };
   }
 
+  const foreignCurrency =
+    ((formData.get("foreignCurrency") as string) || "").trim() || null;
+  if (foreignCurrency && !CURRENCY_CODES.includes(foreignCurrency)) {
+    return { success: false, error: "Invalid foreign currency" };
+  }
+
   await db
     .update(trips)
     .set({
@@ -256,6 +310,7 @@ export async function updateTrip(
       destination: destination.trim(),
       startDate,
       endDate,
+      foreignCurrency,
       updatedAt: new Date().toISOString(),
     })
     .where(and(eq(trips.id, id), eq(trips.userId, userId)));
@@ -267,6 +322,12 @@ export async function updateTrip(
 
 export async function deleteTrip(id: string) {
   const userId = await getUserId();
+
+  await db
+    .delete(currencyPurchases)
+    .where(
+      and(eq(currencyPurchases.tripId, id), eq(currencyPurchases.userId, userId))
+    );
 
   await db
     .delete(expenses)
@@ -419,6 +480,183 @@ export async function importExpenses(
 
   revalidatePath(`/trips/${tripId}`);
   return {};
+}
+
+// ── Currency Purchase Actions ──
+
+export async function addCurrencyPurchase(
+  tripId: string,
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = await getUserId();
+
+  const type = (formData.get("type") as string) || "";
+  const source = (formData.get("source") as string) || "";
+  const fromCurrency = (formData.get("fromCurrency") as string) || "";
+  const toCurrency = (formData.get("toCurrency") as string) || "";
+  const fromAmountStr = (formData.get("fromAmount") as string) || "";
+  const toAmountStr = (formData.get("toAmount") as string) || "";
+  const rateStr = (formData.get("rate") as string) || "";
+  const date = (formData.get("date") as string) || "";
+  const notes = (formData.get("notes") as string) || "";
+
+  const fieldErrors: Record<string, string> = {};
+  const typeErr = validatePurchaseType(type);
+  if (typeErr) fieldErrors.type = typeErr;
+  const sourceErr = validateCurrencySource(source);
+  if (sourceErr) fieldErrors.source = sourceErr;
+  const allCodes = ["INR", ...CURRENCY_CODES];
+  const fromErr = validateCurrencyCode(fromCurrency, allCodes);
+  if (fromErr) fieldErrors.fromCurrency = fromErr;
+  const toErr = validateCurrencyCode(toCurrency, allCodes);
+  if (toErr) fieldErrors.toCurrency = toErr;
+  if (fromCurrency === toCurrency && fromCurrency)
+    fieldErrors.toCurrency = "Currencies must be different";
+  const fromAmtErr = validateAmount(fromAmountStr);
+  if (fromAmtErr) fieldErrors.fromAmount = fromAmtErr;
+  const toAmtErr = validateAmount(toAmountStr);
+  if (toAmtErr) fieldErrors.toAmount = toAmtErr;
+  const rateErr = validateExchangeRate(rateStr);
+  if (rateErr) fieldErrors.rate = rateErr;
+  if (!date) fieldErrors.date = "Date is required";
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      success: false,
+      error: "Please fix the errors below",
+      fieldErrors,
+    };
+  }
+
+  const fromAmount = parseFloat(fromAmountStr);
+  const toAmount = parseFloat(toAmountStr);
+  const rate = parseFloat(rateStr);
+
+  if (type === "sell") {
+    const balances = await getForexBalancesAndRates(tripId, userId);
+    const srcBal = balances.find((b) => b.currency === fromCurrency);
+    const available =
+      source === "card"
+        ? (srcBal?.cardBalance ?? 0)
+        : (srcBal?.notesBalance ?? 0);
+    if (fromAmount > available) {
+      return {
+        success: false,
+        error: `Insufficient ${fromCurrency} ${source} balance (available: ${available.toFixed(2)})`,
+      };
+    }
+  }
+
+  await db.insert(currencyPurchases).values({
+    id: crypto.randomUUID(),
+    userId,
+    tripId,
+    type,
+    source,
+    fromCurrency,
+    toCurrency,
+    fromAmount,
+    toAmount,
+    rate,
+    date,
+    notes: notes.trim() || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+  redirect(`/trips/${tripId}?view=forex`);
+}
+
+export async function updateCurrencyPurchase(
+  id: string,
+  tripId: string,
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = await getUserId();
+
+  const type = (formData.get("type") as string) || "";
+  const source = (formData.get("source") as string) || "";
+  const fromCurrency = (formData.get("fromCurrency") as string) || "";
+  const toCurrency = (formData.get("toCurrency") as string) || "";
+  const fromAmountStr = (formData.get("fromAmount") as string) || "";
+  const toAmountStr = (formData.get("toAmount") as string) || "";
+  const rateStr = (formData.get("rate") as string) || "";
+  const date = (formData.get("date") as string) || "";
+  const notes = (formData.get("notes") as string) || "";
+
+  const fieldErrors: Record<string, string> = {};
+  const typeErr = validatePurchaseType(type);
+  if (typeErr) fieldErrors.type = typeErr;
+  const sourceErr = validateCurrencySource(source);
+  if (sourceErr) fieldErrors.source = sourceErr;
+  const allCodes = ["INR", ...CURRENCY_CODES];
+  const fromErr = validateCurrencyCode(fromCurrency, allCodes);
+  if (fromErr) fieldErrors.fromCurrency = fromErr;
+  const toErr = validateCurrencyCode(toCurrency, allCodes);
+  if (toErr) fieldErrors.toCurrency = toErr;
+  if (fromCurrency === toCurrency && fromCurrency)
+    fieldErrors.toCurrency = "Currencies must be different";
+  const fromAmtErr = validateAmount(fromAmountStr);
+  if (fromAmtErr) fieldErrors.fromAmount = fromAmtErr;
+  const toAmtErr = validateAmount(toAmountStr);
+  if (toAmtErr) fieldErrors.toAmount = toAmtErr;
+  const rateErr = validateExchangeRate(rateStr);
+  if (rateErr) fieldErrors.rate = rateErr;
+  if (!date) fieldErrors.date = "Date is required";
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      success: false,
+      error: "Please fix the errors below",
+      fieldErrors,
+    };
+  }
+
+  await db
+    .update(currencyPurchases)
+    .set({
+      type,
+      source,
+      fromCurrency,
+      toCurrency,
+      fromAmount: parseFloat(fromAmountStr),
+      toAmount: parseFloat(toAmountStr),
+      rate: parseFloat(rateStr),
+      date,
+      notes: notes.trim() || null,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(eq(currencyPurchases.id, id), eq(currencyPurchases.userId, userId))
+    );
+
+  revalidatePath(`/trips/${tripId}`);
+  redirect(`/trips/${tripId}?view=forex`);
+}
+
+export async function deleteCurrencyPurchase(id: string) {
+  const userId = await getUserId();
+
+  const rows = await db
+    .select({ tripId: currencyPurchases.tripId })
+    .from(currencyPurchases)
+    .where(
+      and(eq(currencyPurchases.id, id), eq(currencyPurchases.userId, userId))
+    );
+
+  const tripId = rows[0]?.tripId;
+
+  await db
+    .delete(currencyPurchases)
+    .where(
+      and(eq(currencyPurchases.id, id), eq(currencyPurchases.userId, userId))
+    );
+
+  revalidatePath(`/trips/${tripId}`);
+  redirect(`/trips/${tripId}?view=forex`);
 }
 
 // ── Auth Actions ──

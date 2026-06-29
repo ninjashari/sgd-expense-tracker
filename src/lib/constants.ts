@@ -93,6 +93,36 @@ export const STATUS_STYLES = {
 
 export type Status = "paid" | "planned";
 
+export const CURRENCIES = [
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
+  { code: "SGD", symbol: "S$", name: "Singapore Dollar" },
+  { code: "AED", symbol: "AED", name: "UAE Dirham" },
+  { code: "THB", symbol: "฿", name: "Thai Baht" },
+  { code: "MYR", symbol: "RM", name: "Malaysian Ringgit" },
+  { code: "JPY", symbol: "¥", name: "Japanese Yen" },
+  { code: "AUD", symbol: "A$", name: "Australian Dollar" },
+  { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
+  { code: "CHF", symbol: "CHF", name: "Swiss Franc" },
+  { code: "LKR", symbol: "Rs", name: "Sri Lankan Rupee" },
+  { code: "NPR", symbol: "Rs", name: "Nepalese Rupee" },
+  { code: "IDR", symbol: "Rp", name: "Indonesian Rupiah" },
+  { code: "VND", symbol: "₫", name: "Vietnamese Dong" },
+] as const;
+
+export const CURRENCY_MAP: Record<string, { symbol: string; name: string }> =
+  Object.fromEntries(
+    CURRENCIES.map((c) => [c.code, { symbol: c.symbol, name: c.name }])
+  );
+
+export const CURRENCY_CODES: string[] = CURRENCIES.map((c) => c.code);
+
+export const CURRENCY_SOURCE_STYLES = {
+  notes: "bg-green-50 text-green-700",
+  card: "bg-blue-50 text-blue-700",
+} as const;
+
 export const COLOR_KEY_HEX: Record<string, string> = {
   amber: "#d97706",
   blue: "#2563eb",

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import type { ActionResult } from "@/lib/action-helpers";
 import type { Trip } from "@/lib/db/schema";
 import { todayISO } from "@/lib/utils";
+import { CURRENCIES } from "@/lib/constants";
 import {
   validateTripName,
   validateDestination,
@@ -86,6 +87,24 @@ export function TripForm({ action, trip }: TripFormProps) {
             {errors.destination || fieldErrors?.destination}
           </p>
         )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-2">
+          Foreign Currency (optional)
+        </label>
+        <select
+          name="foreignCurrency"
+          defaultValue={trip?.foreignCurrency || ""}
+          className="w-full bg-white rounded-xl px-4 py-3 text-sm shadow-sm border-0 outline-none focus:ring-2 focus:ring-gray-200"
+        >
+          <option value="">None (domestic trip)</option>
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.code} — {c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

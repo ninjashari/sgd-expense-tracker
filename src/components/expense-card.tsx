@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { STATUS_STYLES, ICON_MAP } from "@/lib/constants";
-import { formatINR, formatDate } from "@/lib/utils";
+import { STATUS_STYLES, ICON_MAP, CURRENCY_SOURCE_STYLES } from "@/lib/constants";
+import { formatINR, formatCurrency, formatDate } from "@/lib/utils";
 import type { Expense } from "@/lib/db/schema";
 import { Ellipsis } from "lucide-react";
 
@@ -22,6 +22,7 @@ export function ExpenseCard({
   };
   const Icon = ICON_MAP[cat.icon] || Ellipsis;
   const statusStyle = STATUS_STYLES[expense.status as "paid" | "planned"];
+  const isForeign = expense.currency !== "INR";
 
   return (
     <Link href={`/trips/${tripId}/edit/${expense.id}`} className="block">
@@ -43,12 +44,23 @@ export function ExpenseCard({
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="font-semibold text-sm whitespace-nowrap">
-                  {formatINR(expense.amount)}
-                </p>
+                {isForeign ? (
+                  <>
+                    <p className="font-semibold text-sm whitespace-nowrap">
+                      {formatCurrency(expense.amount, expense.currency)}
+                    </p>
+                    <p className="text-xs text-gray-400 whitespace-nowrap">
+                      {formatINR(expense.amountInr)}
+                    </p>
+                  </>
+                ) : (
+                  <p className="font-semibold text-sm whitespace-nowrap">
+                    {formatINR(expense.amount)}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span
                 className={`text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}
               >
@@ -59,6 +71,17 @@ export function ExpenseCard({
               >
                 {expense.status}
               </span>
+              {isForeign && expense.currencySource && (
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                    CURRENCY_SOURCE_STYLES[
+                      expense.currencySource as "notes" | "card"
+                    ] || ""
+                  }`}
+                >
+                  {expense.currencySource === "card" ? "Card" : "Notes"}
+                </span>
+              )}
               {expense.paidBy && (
                 <span className="text-xs text-gray-400">
                   · {expense.paidBy}

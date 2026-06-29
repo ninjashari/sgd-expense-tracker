@@ -6,12 +6,15 @@ import { SummaryCards } from "@/components/summary-cards";
 import { FilterTabs } from "@/components/filter-tabs";
 import { ExpenseList } from "@/components/expense-list";
 import { CategoryBreakdown } from "@/components/category-breakdown";
+import { ForexTab } from "@/components/forex-tab";
 import { ImportButton } from "@/components/import-button";
 import {
   getAllExpenses,
   getTripById,
   getTripSummary,
   getCategoriesForUser,
+  getForexBalancesAndRates,
+  getForexTransactionHistory,
 } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
@@ -32,13 +35,19 @@ export default async function TripDetailPage({
 
   const sp = await searchParams;
   const isCategoryView = sp.view === "categories";
+  const isForexView = sp.view === "forex";
   const status = sp.status as "paid" | "planned" | undefined;
   const validStatus =
     status === "paid" || status === "planned" ? status : undefined;
+  const showForex = !!trip.foreignCurrency;
 
   const [summary, expenseList, userCategories] = await Promise.all([
     getTripSummary(id, session.user.id),
-    getAllExpenses(session.user.id, id, isCategoryView ? undefined : validStatus),
+    getAllExpenses(
+      session.user.id,
+      id,
+      isCategoryView || isForexView ? undefined : validStatus
+    ),
     getCategoriesForUser(session.user.id),
   ]);
 
@@ -52,6 +61,18 @@ export default async function TripDetailPage({
       icon: cat.icon,
       color: cat.color,
     };
+  }
+
+  let forexBalances: Awaited<ReturnType<typeof getForexBalancesAndRates>> = [];
+  let forexTransactions: Awaited<
+    ReturnType<typeof getForexTransactionHistory>
+  > = [];
+
+  if (isForexView && showForex) {
+    [forexBalances, forexTransactions] = await Promise.all([
+      getForexBalancesAndRates(id, session.user.id),
+      getForexTransactionHistory(id, session.user.id),
+    ]);
   }
 
   return (
@@ -83,9 +104,15 @@ export default async function TripDetailPage({
           total={summary.total}
         />
         <Suspense>
-          <FilterTabs basePath={`/trips/${id}`} />
+          <FilterTabs basePath={`/trips/${id}`} showForex={showForex} />
         </Suspense>
-        {isCategoryView ? (
+        {isForexView && showForex ? (
+          <ForexTab
+            tripId={id}
+            balances={forexBalances}
+            transactions={forexTransactions}
+          />
+        ) : isCategoryView ? (
           <CategoryBreakdown
             expenses={expenseList}
             categoriesMap={categoriesMap}

@@ -90,6 +90,33 @@ export function validateCategoryName(v: string): string | null {
   return null;
 }
 
+export function validateExchangeRate(v: string | number): string | null {
+  const num = typeof v === "string" ? parseFloat(v) : v;
+  if (isNaN(num)) return "Exchange rate must be a valid number";
+  if (num <= 0) return "Exchange rate must be greater than 0";
+  if (num > 10_000_000) return "Exchange rate seems too high";
+  return null;
+}
+
+export function validateCurrencySource(v: string): string | null {
+  if (v !== "notes" && v !== "card") return "Source must be notes or card";
+  return null;
+}
+
+export function validatePurchaseType(v: string): string | null {
+  if (v !== "buy" && v !== "sell") return "Type must be buy or sell";
+  return null;
+}
+
+export function validateCurrencyCode(
+  v: string,
+  validCodes: string[]
+): string | null {
+  if (!v) return "Currency is required";
+  if (!validCodes.includes(v)) return "Invalid currency";
+  return null;
+}
+
 export function validateUsername(v: string): string | null {
   const trimmed = v?.trim();
   if (!trimmed) return "Username is required";
