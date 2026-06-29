@@ -92,3 +92,26 @@ export const STATUS_STYLES = {
 } as const;
 
 export type Status = "paid" | "planned";
+
+export const COLOR_KEY_HEX: Record<string, string> = {
+  amber: "#d97706",
+  blue: "#2563eb",
+  purple: "#7c3aed",
+  pink: "#db2777",
+  green: "#16a34a",
+  gray: "#4b5563",
+  red: "#dc2626",
+  teal: "#0d9488",
+  indigo: "#4f46e5",
+  orange: "#ea580c",
+  sky: "#0284c7",
+  violet: "#7c3aed",
+  lime: "#65a30d",
+  slate: "#475569",
+};
+
+export function hexFromColorClass(colorClass: string): string {
+  const match = colorClass.match(/text-(\w+)-/);
+  const key = match?.[1] ?? "gray";
+  return COLOR_KEY_HEX[key] ?? "#4b5563";
+}
