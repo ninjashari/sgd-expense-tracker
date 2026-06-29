@@ -15,6 +15,10 @@ import {
   Briefcase,
   Gift,
   MapPin,
+  Fuel,
+  CircleParking,
+  Palmtree,
+  Banknote,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,6 +39,10 @@ export const ICON_OPTIONS = [
   { key: "briefcase", icon: Briefcase, label: "Briefcase" },
   { key: "gift", icon: Gift, label: "Gift" },
   { key: "map-pin", icon: MapPin, label: "Location" },
+  { key: "fuel", icon: Fuel, label: "Fuel" },
+  { key: "circle-parking", icon: CircleParking, label: "Parking" },
+  { key: "palmtree", icon: Palmtree, label: "Palm Tree" },
+  { key: "banknote", icon: Banknote, label: "Money" },
 ] as const;
 
 export const ICON_MAP: Record<string, LucideIcon> = Object.fromEntries(
@@ -53,6 +61,9 @@ export const COLOR_OPTIONS = [
   { key: "indigo", classes: "bg-indigo-50 text-indigo-700", label: "Indigo" },
   { key: "orange", classes: "bg-orange-50 text-orange-700", label: "Orange" },
   { key: "sky", classes: "bg-sky-50 text-sky-700", label: "Sky" },
+  { key: "violet", classes: "bg-violet-50 text-violet-700", label: "Violet" },
+  { key: "lime", classes: "bg-lime-50 text-lime-700", label: "Lime" },
+  { key: "slate", classes: "bg-slate-50 text-slate-700", label: "Slate" },
 ] as const;
 
 export const DEFAULT_CATEGORIES = [
