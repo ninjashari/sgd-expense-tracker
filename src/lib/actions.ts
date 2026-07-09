@@ -100,13 +100,13 @@ export async function addExpense(
   const currency = (formData.get("currency") as string) || "INR";
   const currencySource =
     (formData.get("currencySource") as string) || null;
-  const amountInrStr = formData.get("amountInr") as string;
-  const amountInr =
-    currency === "INR"
-      ? amount
-      : amountInrStr
-        ? parseFloat(amountInrStr)
-        : amount;
+  let amountInr = amount;
+  if (currency !== "INR") {
+    const balances = await getForexBalancesAndRates(tripId, userId);
+    const rate =
+      balances.find((b) => b.currency === currency)?.cumulativeRate ?? 0;
+    amountInr = rate > 0 ? amount * rate : 0;
+  }
 
   await db.insert(expenses).values({
     id: crypto.randomUUID(),
@@ -174,13 +174,13 @@ export async function updateExpense(
   const currency = (formData.get("currency") as string) || "INR";
   const currencySource =
     (formData.get("currencySource") as string) || null;
-  const amountInrStr = formData.get("amountInr") as string;
-  const amountInr =
-    currency === "INR"
-      ? amount
-      : amountInrStr
-        ? parseFloat(amountInrStr)
-        : amount;
+  let amountInr = amount;
+  if (currency !== "INR") {
+    const balances = await getForexBalancesAndRates(tripId, userId);
+    const rate =
+      balances.find((b) => b.currency === currency)?.cumulativeRate ?? 0;
+    amountInr = rate > 0 ? amount * rate : 0;
+  }
 
   await db
     .update(expenses)

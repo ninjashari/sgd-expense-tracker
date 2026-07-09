@@ -29,7 +29,7 @@ export async function getAllExpenses(
     .select()
     .from(expenses)
     .where(and(...conditions))
-    .orderBy(desc(expenses.date));
+    .orderBy(desc(expenses.date), desc(expenses.createdAt));
 }
 
 export async function getExpenseById(
@@ -326,7 +326,7 @@ export async function getForexBalancesAndRates(
           const proportion = p.fromAmount / totalBal;
           bal.inrCost *= 1 - proportion;
         }
-        bal[srcField] -= p.fromAmount;
+        bal[srcField] = Math.max(0, bal[srcField] - p.fromAmount);
       } else {
         const fromBal = balances[fromCode];
         const fromTotal = fromBal.notes + fromBal.card;
@@ -336,7 +336,7 @@ export async function getForexBalancesAndRates(
           fromBal.inrCost -= transferred;
           balances[toCode].inrCost += transferred;
         }
-        fromBal[srcField] -= p.fromAmount;
+        fromBal[srcField] = Math.max(0, fromBal[srcField] - p.fromAmount);
         balances[toCode][srcField] += p.toAmount;
       }
     } else {
@@ -351,7 +351,7 @@ export async function getForexBalancesAndRates(
       }
       const srcField =
         e.currencySource === "card" ? "card" : "notes";
-      bal[srcField] -= e.amount;
+      bal[srcField] = Math.max(0, bal[srcField] - e.amount);
     }
   }
 
