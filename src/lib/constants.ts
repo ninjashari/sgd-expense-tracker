@@ -123,6 +123,11 @@ export const CURRENCY_SOURCE_STYLES = {
   card: "bg-blue-50 text-blue-700",
 } as const;
 
+export const EZLINK_STYLES = {
+  topup: "bg-emerald-50 text-emerald-700",
+  spend: "bg-red-50 text-red-700",
+} as const;
+
 export const COLOR_KEY_HEX: Record<string, string> = {
   amber: "#d97706",
   blue: "#2563eb",

@@ -1,7 +1,20 @@
 import { db } from "./index";
-import { expenses, users, categories, trips, currencyPurchases } from "./schema";
+import {
+  expenses,
+  users,
+  categories,
+  trips,
+  currencyPurchases,
+  ezlinkTransactions,
+} from "./schema";
 import { eq, and, desc, sql, count, ne } from "drizzle-orm";
-import type { Expense, CategoryRecord, Trip, CurrencyPurchase } from "./schema";
+import type {
+  Expense,
+  CategoryRecord,
+  Trip,
+  CurrencyPurchase,
+  EzLinkTransaction,
+} from "./schema";
 
 export async function getAllExpenses(
   userId: string,
@@ -31,36 +44,46 @@ export async function getExpenseById(
 }
 
 export async function getSummary(userId: string) {
-  const rows = await db
-    .select({
-      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
-      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
-    })
-    .from(expenses)
-    .where(eq(expenses.userId, userId));
+  const [rows, ezlinkSpend] = await Promise.all([
+    db
+      .select({
+        totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
+        totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
+      })
+      .from(expenses)
+      .where(eq(expenses.userId, userId)),
+    getEzLinkSpendTotalForUser(userId),
+  ]);
 
   const result = rows[0];
+  const totalPaid = (result?.totalPaid ?? 0) + ezlinkSpend;
+  const totalPlanned = result?.totalPlanned ?? 0;
   return {
-    totalPaid: result?.totalPaid ?? 0,
-    totalPlanned: result?.totalPlanned ?? 0,
-    total: (result?.totalPaid ?? 0) + (result?.totalPlanned ?? 0),
+    totalPaid,
+    totalPlanned,
+    total: totalPaid + totalPlanned,
   };
 }
 
 export async function getTripSummary(tripId: string, userId: string) {
-  const rows = await db
-    .select({
-      totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
-      totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
-    })
-    .from(expenses)
-    .where(and(eq(expenses.tripId, tripId), eq(expenses.userId, userId)));
+  const [rows, ezlinkSpend] = await Promise.all([
+    db
+      .select({
+        totalPaid: sql<number>`coalesce(sum(case when ${expenses.status} = 'paid' then ${expenses.amountInr} else 0 end), 0)`,
+        totalPlanned: sql<number>`coalesce(sum(case when ${expenses.status} = 'planned' then ${expenses.amountInr} else 0 end), 0)`,
+      })
+      .from(expenses)
+      .where(and(eq(expenses.tripId, tripId), eq(expenses.userId, userId))),
+    getEzLinkSpendTotal(tripId, userId),
+  ]);
 
   const result = rows[0];
+  const totalPaid = (result?.totalPaid ?? 0) + ezlinkSpend;
+  const totalPlanned = result?.totalPlanned ?? 0;
   return {
-    totalPaid: result?.totalPaid ?? 0,
-    totalPlanned: result?.totalPlanned ?? 0,
-    total: (result?.totalPaid ?? 0) + (result?.totalPlanned ?? 0),
+    totalPaid,
+    totalPlanned,
+    total: totalPaid + totalPlanned,
   };
 }
 
@@ -72,18 +95,21 @@ export type CategoryBreakdownItem = {
 export async function getAllTripsTotals(
   userId: string
 ): Promise<Record<string, number>> {
-  const rows = await db
-    .select({
-      tripId: expenses.tripId,
-      total: sql<number>`coalesce(sum(${expenses.amountInr}), 0)`,
-    })
-    .from(expenses)
-    .where(eq(expenses.userId, userId))
-    .groupBy(expenses.tripId);
+  const [rows, ezlinkTotals] = await Promise.all([
+    db
+      .select({
+        tripId: expenses.tripId,
+        total: sql<number>`coalesce(sum(${expenses.amountInr}), 0)`,
+      })
+      .from(expenses)
+      .where(eq(expenses.userId, userId))
+      .groupBy(expenses.tripId),
+    getEzLinkSpendTotalsByTrip(userId),
+  ]);
 
-  const result: Record<string, number> = {};
+  const result: Record<string, number> = { ...ezlinkTotals };
   for (const row of rows) {
-    result[row.tripId] = row.total;
+    result[row.tripId] = (result[row.tripId] ?? 0) + row.total;
   }
   return result;
 }
@@ -415,4 +441,162 @@ export async function getAvailableCurrencies(
   return balances
     .filter((b) => b.totalBalance > 0)
     .map((b) => b.currency);
+}
+
+// ── EZ-Link Queries ──
+
+export async function getEzLinkTransactionsForTrip(
+  tripId: string,
+  userId: string
+): Promise<EzLinkTransaction[]> {
+  return db
+    .select()
+    .from(ezlinkTransactions)
+    .where(
+      and(
+        eq(ezlinkTransactions.tripId, tripId),
+        eq(ezlinkTransactions.userId, userId)
+      )
+    )
+    .orderBy(desc(ezlinkTransactions.date), desc(ezlinkTransactions.createdAt));
+}
+
+export async function getEzLinkTransactionById(
+  id: string,
+  userId: string
+): Promise<EzLinkTransaction | undefined> {
+  const rows = await db
+    .select()
+    .from(ezlinkTransactions)
+    .where(
+      and(eq(ezlinkTransactions.id, id), eq(ezlinkTransactions.userId, userId))
+    );
+  return rows[0];
+}
+
+export type EzLinkBalance = {
+  balanceSgd: number;
+  inrCost: number;
+  cumulativeRate: number;
+  totalToppedUpSgd: number;
+  totalToppedUpInr: number;
+  totalSpentSgd: number;
+  totalSpentInr: number;
+};
+
+export async function getEzLinkBalance(
+  tripId: string,
+  userId: string
+): Promise<EzLinkBalance> {
+  const rows = await db
+    .select()
+    .from(ezlinkTransactions)
+    .where(
+      and(
+        eq(ezlinkTransactions.tripId, tripId),
+        eq(ezlinkTransactions.userId, userId)
+      )
+    )
+    .orderBy(ezlinkTransactions.date, ezlinkTransactions.createdAt);
+
+  let balanceSgd = 0;
+  let inrCost = 0;
+  let totalToppedUpSgd = 0;
+  let totalToppedUpInr = 0;
+  let totalSpentSgd = 0;
+  let totalSpentInr = 0;
+
+  for (const tx of rows) {
+    if (tx.type === "topup") {
+      balanceSgd += tx.amountSgd;
+      inrCost += tx.amountInr;
+      totalToppedUpSgd += tx.amountSgd;
+      totalToppedUpInr += tx.amountInr;
+    } else {
+      if (balanceSgd > 0) {
+        const proportion = tx.amountSgd / balanceSgd;
+        inrCost *= 1 - proportion;
+      }
+      balanceSgd -= tx.amountSgd;
+      totalSpentSgd += tx.amountSgd;
+      totalSpentInr += tx.amountInr;
+    }
+  }
+
+  const cumulativeRate =
+    balanceSgd > 0
+      ? inrCost / balanceSgd
+      : totalToppedUpSgd > 0
+        ? totalToppedUpInr / totalToppedUpSgd
+        : 0;
+
+  return {
+    balanceSgd,
+    inrCost,
+    cumulativeRate,
+    totalToppedUpSgd,
+    totalToppedUpInr,
+    totalSpentSgd,
+    totalSpentInr,
+  };
+}
+
+export async function getEzLinkSpendTotal(
+  tripId: string,
+  userId: string
+): Promise<number> {
+  const rows = await db
+    .select({
+      total: sql<number>`coalesce(sum(${ezlinkTransactions.amountInr}), 0)`,
+    })
+    .from(ezlinkTransactions)
+    .where(
+      and(
+        eq(ezlinkTransactions.tripId, tripId),
+        eq(ezlinkTransactions.userId, userId),
+        eq(ezlinkTransactions.type, "spend")
+      )
+    );
+  return rows[0]?.total ?? 0;
+}
+
+export async function getEzLinkSpendTotalForUser(
+  userId: string
+): Promise<number> {
+  const rows = await db
+    .select({
+      total: sql<number>`coalesce(sum(${ezlinkTransactions.amountInr}), 0)`,
+    })
+    .from(ezlinkTransactions)
+    .where(
+      and(
+        eq(ezlinkTransactions.userId, userId),
+        eq(ezlinkTransactions.type, "spend")
+      )
+    );
+  return rows[0]?.total ?? 0;
+}
+
+export async function getEzLinkSpendTotalsByTrip(
+  userId: string
+): Promise<Record<string, number>> {
+  const rows = await db
+    .select({
+      tripId: ezlinkTransactions.tripId,
+      total: sql<number>`coalesce(sum(${ezlinkTransactions.amountInr}), 0)`,
+    })
+    .from(ezlinkTransactions)
+    .where(
+      and(
+        eq(ezlinkTransactions.userId, userId),
+        eq(ezlinkTransactions.type, "spend")
+      )
+    )
+    .groupBy(ezlinkTransactions.tripId);
+
+  const result: Record<string, number> = {};
+  for (const row of rows) {
+    result[row.tripId] = row.total;
+  }
+  return result;
 }

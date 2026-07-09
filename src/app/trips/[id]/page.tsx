@@ -7,6 +7,7 @@ import { FilterTabs } from "@/components/filter-tabs";
 import { ExpenseList } from "@/components/expense-list";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { ForexTab } from "@/components/forex-tab";
+import { EzLinkTab } from "@/components/ezlink-tab";
 import { ImportButton } from "@/components/import-button";
 import {
   getAllExpenses,
@@ -15,6 +16,8 @@ import {
   getCategoriesForUser,
   getForexBalancesAndRates,
   getForexTransactionHistory,
+  getEzLinkBalance,
+  getEzLinkTransactionsForTrip,
 } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
@@ -36,17 +39,19 @@ export default async function TripDetailPage({
   const sp = await searchParams;
   const isCategoryView = sp.view === "categories";
   const isForexView = sp.view === "forex";
+  const isEzLinkView = sp.view === "ezlink";
   const status = sp.status as "paid" | "planned" | undefined;
   const validStatus =
     status === "paid" || status === "planned" ? status : undefined;
   const showForex = !!trip.foreignCurrency;
+  const showEzLink = trip.foreignCurrency === "SGD";
 
   const [summary, expenseList, userCategories] = await Promise.all([
     getTripSummary(id, session.user.id),
     getAllExpenses(
       session.user.id,
       id,
-      isCategoryView || isForexView ? undefined : validStatus
+      isCategoryView || isForexView || isEzLinkView ? undefined : validStatus
     ),
     getCategoriesForUser(session.user.id),
   ]);
@@ -72,6 +77,18 @@ export default async function TripDetailPage({
     [forexBalances, forexTransactions] = await Promise.all([
       getForexBalancesAndRates(id, session.user.id),
       getForexTransactionHistory(id, session.user.id),
+    ]);
+  }
+
+  let ezlinkBalance: Awaited<ReturnType<typeof getEzLinkBalance>> | null = null;
+  let ezlinkTransactions: Awaited<
+    ReturnType<typeof getEzLinkTransactionsForTrip>
+  > = [];
+
+  if (isEzLinkView && showEzLink) {
+    [ezlinkBalance, ezlinkTransactions] = await Promise.all([
+      getEzLinkBalance(id, session.user.id),
+      getEzLinkTransactionsForTrip(id, session.user.id),
     ]);
   }
 
@@ -104,9 +121,20 @@ export default async function TripDetailPage({
           total={summary.total}
         />
         <Suspense>
-          <FilterTabs basePath={`/trips/${id}`} showForex={showForex} />
+          <FilterTabs
+            basePath={`/trips/${id}`}
+            showForex={showForex}
+            showEzLink={showEzLink}
+          />
         </Suspense>
-        {isForexView && showForex ? (
+        {isEzLinkView && showEzLink && ezlinkBalance ? (
+          <EzLinkTab
+            tripId={id}
+            balance={ezlinkBalance}
+            transactions={ezlinkTransactions}
+            categoriesMap={categoriesMap}
+          />
+        ) : isForexView && showForex ? (
           <ForexTab
             tripId={id}
             balances={forexBalances}

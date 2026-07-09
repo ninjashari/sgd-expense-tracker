@@ -12,6 +12,7 @@ import {
   validateCategoryName,
   validateUsername,
   validatePassword,
+  validateEzLinkType,
 } from "../validations";
 
 describe("validateDescription", () => {
@@ -290,5 +291,20 @@ describe("validatePassword", () => {
 
   it("accepts boundary (6 chars)", () => {
     expect(validatePassword("123456")).toBeNull();
+  });
+});
+
+describe("validateEzLinkType", () => {
+  it("accepts topup", () => {
+    expect(validateEzLinkType("topup")).toBeNull();
+  });
+
+  it("accepts spend", () => {
+    expect(validateEzLinkType("spend")).toBeNull();
+  });
+
+  it("rejects other values", () => {
+    expect(validateEzLinkType("buy")).not.toBeNull();
+    expect(validateEzLinkType("")).not.toBeNull();
   });
 });

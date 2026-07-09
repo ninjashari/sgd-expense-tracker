@@ -108,6 +108,11 @@ export function validatePurchaseType(v: string): string | null {
   return null;
 }
 
+export function validateEzLinkType(v: string): string | null {
+  if (v !== "topup" && v !== "spend") return "Type must be topup or spend";
+  return null;
+}
+
 export function validateCurrencyCode(
   v: string,
   validCodes: string[]
