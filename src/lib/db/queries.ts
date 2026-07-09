@@ -29,7 +29,7 @@ export async function getAllExpenses(
     .select()
     .from(expenses)
     .where(and(...conditions))
-    .orderBy(desc(expenses.date));
+    .orderBy(desc(expenses.date), desc(expenses.createdAt));
 }
 
 export async function getExpenseById(
