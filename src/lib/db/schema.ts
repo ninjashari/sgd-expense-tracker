@@ -76,8 +76,27 @@ export const currencyPurchases = sqliteTable("currency_purchases", {
   updatedAt: text("updated_at").notNull(),
 });
 
+export const ezlinkTransactions = sqliteTable("ezlink_transactions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  tripId: text("trip_id")
+    .notNull()
+    .references(() => trips.id),
+  type: text("type").notNull(),
+  amountSgd: real("amount_sgd").notNull(),
+  amountInr: real("amount_inr").notNull(),
+  category: text("category"),
+  date: text("date").notNull(),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
 export type CategoryRecord = typeof categories.$inferSelect;
 export type Trip = typeof trips.$inferSelect;
 export type CurrencyPurchase = typeof currencyPurchases.$inferSelect;
+export type EzLinkTransaction = typeof ezlinkTransactions.$inferSelect;

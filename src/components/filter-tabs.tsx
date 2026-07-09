@@ -14,9 +14,11 @@ const baseTabs = [
 export function FilterTabs({
   basePath = "/",
   showForex = false,
+  showEzLink = false,
 }: {
   basePath?: string;
   showForex?: boolean;
+  showEzLink?: boolean;
 }) {
   const searchParams = useSearchParams();
   const view = searchParams.get("view");
@@ -25,11 +27,13 @@ export function FilterTabs({
     ? "categories"
     : view === "forex"
       ? "forex"
-      : status;
+      : view === "ezlink"
+        ? "ezlink"
+        : status;
 
-  const tabs = showForex
-    ? [...baseTabs, { label: "Forex", value: "forex" }]
-    : baseTabs;
+  let tabs = baseTabs;
+  if (showForex) tabs = [...tabs, { label: "Forex", value: "forex" }];
+  if (showEzLink) tabs = [...tabs, { label: "EZ-Link", value: "ezlink" }];
 
   return (
     <div className="flex gap-2 overflow-x-auto">
@@ -39,9 +43,11 @@ export function FilterTabs({
             ? `${basePath}?view=categories`
             : tab.value === "forex"
               ? `${basePath}?view=forex`
-              : tab.value
-                ? `${basePath}?status=${tab.value}`
-                : basePath;
+              : tab.value === "ezlink"
+                ? `${basePath}?view=ezlink`
+                : tab.value
+                  ? `${basePath}?status=${tab.value}`
+                  : basePath;
 
         return (
           <Link

@@ -7,6 +7,7 @@ import {
   categories,
   trips,
   currencyPurchases,
+  ezlinkTransactions,
 } from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -38,11 +39,14 @@ import {
   validateCurrencySource,
   validatePurchaseType,
   validateCurrencyCode,
+  validateEzLinkType,
 } from "./validations";
 import {
   getCategoriesForUser,
   getCategoryExpenseCount,
   getForexBalancesAndRates,
+  getEzLinkBalance,
+  getEzLinkTransactionById,
 } from "./db/queries";
 
 async function getUserId() {
@@ -327,6 +331,15 @@ export async function deleteTrip(id: string) {
     .delete(currencyPurchases)
     .where(
       and(eq(currencyPurchases.tripId, id), eq(currencyPurchases.userId, userId))
+    );
+
+  await db
+    .delete(ezlinkTransactions)
+    .where(
+      and(
+        eq(ezlinkTransactions.tripId, id),
+        eq(ezlinkTransactions.userId, userId)
+      )
     );
 
   await db
@@ -657,6 +670,229 @@ export async function deleteCurrencyPurchase(id: string) {
 
   revalidatePath(`/trips/${tripId}`);
   redirect(`/trips/${tripId}?view=forex`);
+}
+
+// ── EZ-Link Actions ──
+
+export async function addEzLinkTopup(
+  tripId: string,
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = await getUserId();
+
+  const type = (formData.get("type") as string) || "";
+  const amountSgdStr = (formData.get("amountSgd") as string) || "";
+  const amountInrStr = (formData.get("amountInr") as string) || "";
+  const date = (formData.get("date") as string) || "";
+  const notes = (formData.get("notes") as string) || "";
+
+  const fieldErrors: Record<string, string> = {};
+  const typeErr = validateEzLinkType(type);
+  if (typeErr) fieldErrors.type = typeErr;
+  const sgdErr = validateAmount(amountSgdStr);
+  if (sgdErr) fieldErrors.amountSgd = sgdErr;
+  const inrErr = validateAmount(amountInrStr);
+  if (inrErr) fieldErrors.amountInr = inrErr;
+  if (!date) fieldErrors.date = "Date is required";
+  const notesErr = validateNotes(notes);
+  if (notesErr) fieldErrors.notes = notesErr;
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      success: false,
+      error: "Please fix the errors below",
+      fieldErrors,
+    };
+  }
+
+  await db.insert(ezlinkTransactions).values({
+    id: crypto.randomUUID(),
+    userId,
+    tripId,
+    type: "topup",
+    amountSgd: parseFloat(amountSgdStr),
+    amountInr: parseFloat(amountInrStr),
+    category: null,
+    date,
+    notes: notes.trim() || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+  redirect(`/trips/${tripId}?view=ezlink`);
+}
+
+export async function addEzLinkSpend(
+  tripId: string,
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = await getUserId();
+
+  const type = (formData.get("type") as string) || "";
+  const amountSgdStr = (formData.get("amountSgd") as string) || "";
+  const categoryId = (formData.get("category") as string) || "";
+  const date = (formData.get("date") as string) || "";
+  const notes = (formData.get("notes") as string) || "";
+
+  const userCategories = await getCategoriesForUser(userId);
+  const validCategoryIds = userCategories.map((c) => c.id);
+
+  const fieldErrors: Record<string, string> = {};
+  const typeErr = validateEzLinkType(type);
+  if (typeErr) fieldErrors.type = typeErr;
+  const sgdErr = validateAmount(amountSgdStr);
+  if (sgdErr) fieldErrors.amountSgd = sgdErr;
+  const catErr = validateCategory(categoryId, validCategoryIds);
+  if (catErr) fieldErrors.category = catErr;
+  if (!date) fieldErrors.date = "Date is required";
+  const notesErr = validateNotes(notes);
+  if (notesErr) fieldErrors.notes = notesErr;
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      success: false,
+      error: "Please fix the errors below",
+      fieldErrors,
+    };
+  }
+
+  const amountSgd = parseFloat(amountSgdStr);
+  const balance = await getEzLinkBalance(tripId, userId);
+  if (amountSgd > balance.balanceSgd) {
+    return {
+      success: false,
+      error: "Please fix the errors below",
+      fieldErrors: {
+        amountSgd: `Insufficient EZ-Link balance (available: S$${balance.balanceSgd.toFixed(2)})`,
+      },
+    };
+  }
+
+  const amountInr = amountSgd * balance.cumulativeRate;
+
+  await db.insert(ezlinkTransactions).values({
+    id: crypto.randomUUID(),
+    userId,
+    tripId,
+    type: "spend",
+    amountSgd,
+    amountInr,
+    category: categoryId,
+    date,
+    notes: notes.trim() || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+  redirect(`/trips/${tripId}?view=ezlink`);
+}
+
+export async function updateEzLinkTransaction(
+  id: string,
+  tripId: string,
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = await getUserId();
+
+  const existing = await getEzLinkTransactionById(id, userId);
+  if (!existing) {
+    return { success: false, error: "Transaction not found" };
+  }
+
+  const amountSgdStr = (formData.get("amountSgd") as string) || "";
+  const date = (formData.get("date") as string) || "";
+  const notes = (formData.get("notes") as string) || "";
+
+  const fieldErrors: Record<string, string> = {};
+  const sgdErr = validateAmount(amountSgdStr);
+  if (sgdErr) fieldErrors.amountSgd = sgdErr;
+  if (!date) fieldErrors.date = "Date is required";
+  const notesErr = validateNotes(notes);
+  if (notesErr) fieldErrors.notes = notesErr;
+
+  const amountSgd = parseFloat(amountSgdStr);
+  let amountInr = existing.amountInr;
+  let categoryId: string | null = existing.category;
+
+  if (existing.type === "topup") {
+    const amountInrStr = (formData.get("amountInr") as string) || "";
+    const inrErr = validateAmount(amountInrStr);
+    if (inrErr) fieldErrors.amountInr = inrErr;
+    amountInr = parseFloat(amountInrStr);
+  } else {
+    categoryId = (formData.get("category") as string) || "";
+    const userCategories = await getCategoriesForUser(userId);
+    const validCategoryIds = userCategories.map((c) => c.id);
+    const catErr = validateCategory(categoryId, validCategoryIds);
+    if (catErr) fieldErrors.category = catErr;
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      success: false,
+      error: "Please fix the errors below",
+      fieldErrors,
+    };
+  }
+
+  if (existing.type === "spend") {
+    const balance = await getEzLinkBalance(tripId, userId);
+    const available = balance.balanceSgd + existing.amountSgd;
+    if (amountSgd > available) {
+      return {
+        success: false,
+        error: "Please fix the errors below",
+        fieldErrors: {
+          amountSgd: `Insufficient EZ-Link balance (available: S$${available.toFixed(2)})`,
+        },
+      };
+    }
+    amountInr = amountSgd * (balance.cumulativeRate || 0);
+  }
+
+  await db
+    .update(ezlinkTransactions)
+    .set({
+      amountSgd,
+      amountInr,
+      category: categoryId,
+      date,
+      notes: notes.trim() || null,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(eq(ezlinkTransactions.id, id), eq(ezlinkTransactions.userId, userId))
+    );
+
+  revalidatePath(`/trips/${tripId}`);
+  redirect(`/trips/${tripId}?view=ezlink`);
+}
+
+export async function deleteEzLinkTransaction(id: string) {
+  const userId = await getUserId();
+
+  const rows = await db
+    .select({ tripId: ezlinkTransactions.tripId })
+    .from(ezlinkTransactions)
+    .where(
+      and(eq(ezlinkTransactions.id, id), eq(ezlinkTransactions.userId, userId))
+    );
+
+  const tripId = rows[0]?.tripId;
+
+  await db
+    .delete(ezlinkTransactions)
+    .where(
+      and(eq(ezlinkTransactions.id, id), eq(ezlinkTransactions.userId, userId))
+    );
+
+  revalidatePath(`/trips/${tripId}`);
+  redirect(`/trips/${tripId}?view=ezlink`);
 }
 
 // ── Auth Actions ──
