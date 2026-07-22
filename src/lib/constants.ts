@@ -129,6 +129,10 @@ export const EZLINK_STYLES = {
   return: "bg-amber-50 text-amber-700",
 } as const;
 
+// Placeholder `expenses.category` value for EZ-Link refund rows — never resolved
+// through a user's categoriesMap, since ExpenseCard renders refunds distinctly.
+export const EZLINK_REFUND_CATEGORY = "ezlink-refund";
+
 export const COLOR_KEY_HEX: Record<string, string> = {
   amber: "#d97706",
   blue: "#2563eb",

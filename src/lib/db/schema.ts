@@ -51,6 +51,12 @@ export const expenses = sqliteTable("expenses", {
   notes: text("notes"),
   paidBy: text("paid_by"),
   currencySource: text("currency_source"),
+  type: text("type").notNull().default("expense"),
+  // Not a real FK: only used for UI routing (return rows link back to the
+  // ezlinkTransactions row that created them), and a genuine reference here
+  // would form a circular FK with ezlinkTransactions.linkedExpenseId that
+  // can't be satisfied by sequential inserts.
+  linkedEzlinkTransactionId: text("linked_ezlink_transaction_id"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
@@ -91,6 +97,7 @@ export const ezlinkTransactions = sqliteTable("ezlink_transactions", {
   linkedPurchaseId: text("linked_purchase_id").references(
     () => currencyPurchases.id
   ),
+  linkedExpenseId: text("linked_expense_id").references(() => expenses.id),
   date: text("date").notNull(),
   notes: text("notes"),
   createdAt: text("created_at").notNull(),
