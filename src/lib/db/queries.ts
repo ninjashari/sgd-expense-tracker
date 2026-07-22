@@ -482,6 +482,8 @@ export type EzLinkBalance = {
   totalToppedUpInr: number;
   totalSpentSgd: number;
   totalSpentInr: number;
+  totalReturnedSgd: number;
+  totalReturnedInr: number;
 };
 
 export async function getEzLinkBalance(
@@ -505,6 +507,8 @@ export async function getEzLinkBalance(
   let totalToppedUpInr = 0;
   let totalSpentSgd = 0;
   let totalSpentInr = 0;
+  let totalReturnedSgd = 0;
+  let totalReturnedInr = 0;
 
   for (const tx of rows) {
     if (tx.type === "topup") {
@@ -518,8 +522,13 @@ export async function getEzLinkBalance(
         inrCost *= 1 - proportion;
       }
       balanceSgd -= tx.amountSgd;
-      totalSpentSgd += tx.amountSgd;
-      totalSpentInr += tx.amountInr;
+      if (tx.type === "return") {
+        totalReturnedSgd += tx.amountSgd;
+        totalReturnedInr += tx.amountInr;
+      } else {
+        totalSpentSgd += tx.amountSgd;
+        totalSpentInr += tx.amountInr;
+      }
     }
   }
 
@@ -538,6 +547,8 @@ export async function getEzLinkBalance(
     totalToppedUpInr,
     totalSpentSgd,
     totalSpentInr,
+    totalReturnedSgd,
+    totalReturnedInr,
   };
 }
 

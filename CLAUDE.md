@@ -49,7 +49,7 @@ TURSO_AUTH_TOKEN     # Turso auth token
 
 **currencyPurchases** — `id` (PK), `userId` (FK→users), `tripId` (FK→trips), `type` ("buy"|"sell"), `source` ("notes"|"card"), `fromCurrency`, `toCurrency`, `fromAmount` (real), `toAmount` (real), `rate` (real), `date`, `notes` (nullable), `createdAt`, `updatedAt` — backs the "Forex" tab (`?view=forex`), tracked separately from `expenses`.
 
-**ezlinkTransactions** — `id` (PK), `userId` (FK→users), `tripId` (FK→trips), `type` ("topup"|"spend"), `amountSgd` (real), `amountInr` (real, computed server-side), `category` (nullable FK→categories.id, only set for "spend"), `date`, `notes` (nullable), `createdAt`, `updatedAt` — backs the "EZ-Link" tab (`?view=ezlink`, shown when `trip.foreignCurrency === "SGD"`). Topping up the card (`type="topup"`) is a currency conversion, not spending, and is excluded from trip totals; only `type="spend"` rows (actual taps/purchases) count toward the trip's Paid/Planned/Total via `getEzLinkSpendTotal`.
+**ezlinkTransactions** — `id` (PK), `userId` (FK→users), `tripId` (FK→trips), `type` ("topup"|"spend"|"return"), `amountSgd` (real), `amountInr` (real, computed server-side), `category` (nullable FK→categories.id, only set for "spend"), `linkedPurchaseId` (nullable FK→currencyPurchases.id, only set for "return"), `date`, `notes` (nullable), `createdAt`, `updatedAt` — backs the "EZ-Link" tab (`?view=ezlink`, shown when `trip.foreignCurrency === "SGD"`). Topping up the card (`type="topup"`) is a currency conversion, not spending, and is excluded from trip totals; only `type="spend"` rows (actual taps/purchases) count toward the trip's Paid/Planned/Total via `getEzLinkSpendTotal`. `type="return"` rows record handing back card balance and are also excluded from trip totals — see "EZ-Link Card" below.
 
 **Relationships:** Every expense belongs to a trip. Every expense references a category by ID. Trips, expenses, categories, currency purchases, and EZ-Link transactions are all scoped to a user.
 
@@ -69,7 +69,8 @@ TURSO_AUTH_TOKEN     # Turso auth token
 | `/trips/[id]/edit/[expenseId]` | `src/app/trips/[id]/edit/[expenseId]/page.tsx` | Edit/delete expense |
 | `/trips/[id]/ezlink/topup` | `src/app/trips/[id]/ezlink/topup/page.tsx` | Record an EZ-Link card top-up |
 | `/trips/[id]/ezlink/spend` | `src/app/trips/[id]/ezlink/spend/page.tsx` | Log a spend/tap from the EZ-Link card |
-| `/trips/[id]/ezlink/edit/[transactionId]` | `src/app/trips/[id]/ezlink/edit/[transactionId]/page.tsx` | Edit/delete an EZ-Link top-up or spend |
+| `/trips/[id]/ezlink/return` | `src/app/trips/[id]/ezlink/return/page.tsx` | Return card balance, refunding it into Forex |
+| `/trips/[id]/ezlink/edit/[transactionId]` | `src/app/trips/[id]/ezlink/edit/[transactionId]/page.tsx` | Edit/delete an EZ-Link top-up, spend, or return |
 | `/categories` | `src/app/categories/page.tsx` | List user categories |
 | `/categories/add` | `src/app/categories/add/page.tsx` | Create category |
 | `/categories/edit/[id]` | `src/app/categories/edit/[id]/page.tsx` | Edit category |
@@ -93,8 +94,9 @@ All use the `ActionResult` pattern: `(prev: ActionResult | null, formData: FormD
 | `importExpenses` | `(tripId, items[])` | Bulk insert from CSV data |
 | `addEzLinkTopup` | `(tripId, prev, formData)` | Records a card top-up (not counted toward trip totals) |
 | `addEzLinkSpend` | `(tripId, prev, formData)` | Logs a spend/tap, blocks if it exceeds the card balance, redirects to `?view=ezlink` |
-| `updateEzLinkTransaction` | `(id, tripId, prev, formData)` | Updates a top-up or spend row (branches on stored `type`) |
-| `deleteEzLinkTransaction` | `(id)` | Deletes an EZ-Link transaction, redirects to `?view=ezlink` |
+| `addEzLinkReturn` | `(tripId, prev, formData)` | Returns (some or all of) the card balance: inserts a linked Forex "buy" row (SGD into `notes`/`card`, same cost basis) plus an EZ-Link `"return"` row, blocks if it exceeds the card balance |
+| `updateEzLinkTransaction` | `(id, tripId, prev, formData)` | Updates a top-up, spend, or return row (branches on stored `type`); for returns, also syncs the linked Forex row |
+| `deleteEzLinkTransaction` | `(id)` | Deletes an EZ-Link transaction, redirects to `?view=ezlink`; for returns, also deletes the linked Forex row |
 | `loginUser` | `(formData)` | Authenticates via NextAuth |
 | `registerUser` | `(formData)` | Creates user + 8 default categories |
 
@@ -107,7 +109,7 @@ Helper: `getUserId()` — extracts userId from session, throws if unauthorized.
 | `src/lib/db/schema.ts` | Drizzle table definitions and TypeScript types |
 | `src/lib/db/queries.ts` | 9 query functions (expenses, trips, categories, users) |
 | `src/lib/db/index.ts` | DB singleton (Proxy pattern for lazy init) |
-| `src/lib/actions.ts` | All 13 server actions |
+| `src/lib/actions.ts` | All 14 server actions |
 | `src/lib/auth.ts` | NextAuth config (Credentials, JWT, callbacks) |
 | `src/lib/constants.ts` | ICON_OPTIONS (16 icons), ICON_MAP, COLOR_OPTIONS (11 colors), DEFAULT_CATEGORIES (8), CURRENCIES, STATUS_STYLES |
 | `src/lib/utils.ts` | formatCurrency, formatINR, formatDate, convertToINR, todayISO, getMaxDate, getMinDate |
@@ -134,11 +136,12 @@ Helper: `getUserId()` — extracts userId from session, throws if unauthorized.
 | `delete-button.tsx` | Delete button with confirmation dialog (accepts `label` and `confirmMessage` props) |
 | `import-button.tsx` | Opens import drawer, accepts `tripId` and `categories` props |
 | `import-drawer.tsx` | Modal for CSV import: paste or upload, parse, edit rows, map category names→IDs, bulk import |
-| `ezlink-tab.tsx` | EZ-Link tab: balance card, Top Up / Log Spend actions, transaction history |
-| `ezlink-balance-card.tsx` | Card balance, total topped-up/spent, avg SGD→INR rate |
-| `ezlink-transaction-list.tsx` | Topup (green "+") / spend (red "−", with category) transaction rows |
+| `ezlink-tab.tsx` | EZ-Link tab: balance card, Top Up / Log Spend / Return actions (Return hidden when balance is 0), transaction history |
+| `ezlink-balance-card.tsx` | Card balance, total topped-up/spent/returned, avg SGD→INR rate |
+| `ezlink-transaction-list.tsx` | Topup (green "+") / spend (red "−", with category) / return (amber "−") transaction rows |
 | `ezlink-topup-form.tsx` | Add/edit EZ-Link top-up form (SGD amount, INR cost, live rate) |
 | `ezlink-spend-form.tsx` | Add/edit EZ-Link spend form (SGD amount, category picker, date) |
+| `ezlink-return-form.tsx` | Add/edit EZ-Link return form (SGD amount up to balance, notes/card source toggle, date) |
 
 ## Architecture Patterns
 
@@ -174,6 +177,7 @@ All expenses store `amountInr` (auto-converted). Summary cards always display in
 - The app models this with `ezlinkTransactions`: `type: "topup"` rows track the card balance/cost-basis but are excluded from the trip's Paid/Planned/Total; `type: "spend"` rows (logged per-transaction, with a category) are the real expenses and are the only ones counted, via `getEzLinkSpendTotal`.
 - Balance and average SGD→INR rate are derived by chronologically replaying all transactions for a trip (`getEzLinkBalance`) rather than stored as a running total — the same technique already used for the Forex tab's `getForexBalancesAndRates`.
 - Spending more than the current card balance is rejected server-side in `addEzLinkSpend`/`updateEzLinkTransaction`.
+- **Returning the card** (`type: "return"`) hands back some or all of the remaining balance and re-enters it into the trip's Forex tracking — since EZ-Link SGD was never recorded in Forex, this is done as a Forex `currencyPurchases` `type: "buy"` row (`fromCurrency: "INR"` → `toCurrency: "SGD"`, into the `notes` or `card` bucket chosen on the return form) using the EZ-Link balance's own `cumulativeRate` as the cost basis, rather than a `"sell"`, which would fail Forex's balance-availability check. Each `"return"` row stores the created purchase's id in `linkedPurchaseId`; `addEzLinkReturn`/`updateEzLinkTransaction`/`deleteEzLinkTransaction` keep the two rows in sync (create both together, update both together, delete both together). Like spends, returns deplete `getEzLinkBalance`'s running balance via the weighted-average cost calculation, but are tracked separately as `totalReturnedSgd/Inr` rather than being counted as spend, and are excluded from `getEzLinkSpendTotal` (still filtered to `type = "spend"` only).
 
 ## CSV Import
 

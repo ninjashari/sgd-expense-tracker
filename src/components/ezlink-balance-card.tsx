@@ -1,5 +1,6 @@
 import { formatCurrency, formatINR } from "@/lib/utils";
 import type { EzLinkBalance } from "@/lib/db/queries";
+import clsx from "clsx";
 
 interface EzLinkBalanceCardProps {
   balance: EzLinkBalance;
@@ -17,7 +18,12 @@ export function EzLinkBalanceCard({ balance }: EzLinkBalanceCardProps) {
           {formatCurrency(balance.balanceSgd, "SGD")}
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div
+        className={clsx(
+          "grid gap-3 mb-3",
+          balance.totalReturnedSgd > 0 ? "grid-cols-3" : "grid-cols-2"
+        )}
+      >
         <div className="bg-emerald-50 rounded-xl px-3 py-2">
           <p className="text-[10px] text-emerald-600 font-medium">
             Total Topped Up
@@ -32,6 +38,16 @@ export function EzLinkBalanceCard({ balance }: EzLinkBalanceCardProps) {
             {formatCurrency(balance.totalSpentSgd, "SGD")}
           </p>
         </div>
+        {balance.totalReturnedSgd > 0 && (
+          <div className="bg-amber-50 rounded-xl px-3 py-2">
+            <p className="text-[10px] text-amber-600 font-medium">
+              Total Returned
+            </p>
+            <p className="text-sm font-semibold text-amber-700">
+              {formatCurrency(balance.totalReturnedSgd, "SGD")}
+            </p>
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between text-xs text-gray-400">
         <span>

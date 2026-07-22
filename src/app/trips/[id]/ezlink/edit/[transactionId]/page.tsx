@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { EzLinkTopupForm } from "@/components/ezlink-topup-form";
 import { EzLinkSpendForm } from "@/components/ezlink-spend-form";
+import { EzLinkReturnForm } from "@/components/ezlink-return-form";
 import { DeleteButton } from "@/components/delete-button";
 import { updateEzLinkTransaction, deleteEzLinkTransaction } from "@/lib/actions";
 import {
@@ -11,6 +12,7 @@ import {
   getTripById,
   getCategoriesForUser,
   getEzLinkBalance,
+  getCurrencyPurchaseById,
 } from "@/lib/db/queries";
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
@@ -42,6 +44,7 @@ export default async function EditEzLinkTransactionPage({
 
   let categories: Awaited<ReturnType<typeof getCategoriesForUser>> = [];
   let availableBalanceSgd = 0;
+  let defaultSource: "notes" | "card" = "notes";
   if (transaction.type === "spend") {
     const [cats, balance] = await Promise.all([
       getCategoriesForUser(session.user.id),
@@ -49,7 +52,23 @@ export default async function EditEzLinkTransactionPage({
     ]);
     categories = cats;
     availableBalanceSgd = balance.balanceSgd + transaction.amountSgd;
+  } else if (transaction.type === "return") {
+    const [balance, linkedPurchase] = await Promise.all([
+      getEzLinkBalance(id, session.user.id),
+      transaction.linkedPurchaseId
+        ? getCurrencyPurchaseById(transaction.linkedPurchaseId, session.user.id)
+        : Promise.resolve(undefined),
+    ]);
+    availableBalanceSgd = balance.balanceSgd + transaction.amountSgd;
+    if (linkedPurchase?.source === "card") defaultSource = "card";
   }
+
+  const title =
+    transaction.type === "topup"
+      ? "Top Up"
+      : transaction.type === "return"
+        ? "Return"
+        : "Spend";
 
   return (
     <div className="min-h-screen pb-8">
@@ -63,7 +82,7 @@ export default async function EditEzLinkTransactionPage({
               <ArrowLeft size={20} />
             </Link>
             <h1 className="text-lg font-semibold tracking-tight">
-              Edit {transaction.type === "topup" ? "Top Up" : "Spend"}
+              Edit {title}
             </h1>
           </div>
           <DeleteButton
@@ -75,6 +94,13 @@ export default async function EditEzLinkTransactionPage({
       <main className="max-w-lg mx-auto px-4 py-6">
         {transaction.type === "topup" ? (
           <EzLinkTopupForm action={boundUpdateAction} transaction={transaction} />
+        ) : transaction.type === "return" ? (
+          <EzLinkReturnForm
+            action={boundUpdateAction}
+            transaction={transaction}
+            availableBalanceSgd={availableBalanceSgd}
+            defaultSource={defaultSource}
+          />
         ) : (
           <EzLinkSpendForm
             action={boundUpdateAction}
