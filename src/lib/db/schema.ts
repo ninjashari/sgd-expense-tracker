@@ -88,6 +88,9 @@ export const ezlinkTransactions = sqliteTable("ezlink_transactions", {
   amountSgd: real("amount_sgd").notNull(),
   amountInr: real("amount_inr").notNull(),
   category: text("category"),
+  linkedPurchaseId: text("linked_purchase_id").references(
+    () => currencyPurchases.id
+  ),
   date: text("date").notNull(),
   notes: text("notes"),
   createdAt: text("created_at").notNull(),

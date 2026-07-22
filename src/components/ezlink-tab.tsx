@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Undo2 } from "lucide-react";
 import { EzLinkBalanceCard } from "./ezlink-balance-card";
 import { EzLinkTransactionList } from "./ezlink-transaction-list";
 import type { EzLinkBalance } from "@/lib/db/queries";
 import type { EzLinkTransaction } from "@/lib/db/schema";
+import clsx from "clsx";
 
 interface EzLinkTabProps {
   tripId: string;
@@ -21,7 +22,12 @@ export function EzLinkTab({
   return (
     <div className="space-y-4">
       <EzLinkBalanceCard balance={balance} />
-      <div className="grid grid-cols-2 gap-3">
+      <div
+        className={clsx(
+          "grid gap-3",
+          balance.balanceSgd > 0 ? "grid-cols-3" : "grid-cols-2"
+        )}
+      >
         <Link
           href={`/trips/${tripId}/ezlink/topup`}
           className="flex items-center justify-center gap-1.5 bg-emerald-600 text-white text-sm font-medium py-2.5 rounded-xl shadow-sm hover:shadow transition-all"
@@ -36,6 +42,15 @@ export function EzLinkTab({
           <Plus size={14} />
           Log Spend
         </Link>
+        {balance.balanceSgd > 0 && (
+          <Link
+            href={`/trips/${tripId}/ezlink/return`}
+            className="flex items-center justify-center gap-1.5 bg-amber-600 text-white text-sm font-medium py-2.5 rounded-xl shadow-sm hover:shadow transition-all"
+          >
+            <Undo2 size={14} />
+            Return
+          </Link>
+        )}
       </div>
       <h3 className="text-sm font-semibold text-gray-700">Transactions</h3>
       <EzLinkTransactionList

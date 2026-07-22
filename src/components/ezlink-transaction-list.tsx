@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ICON_MAP, EZLINK_STYLES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { EzLinkTransaction } from "@/lib/db/schema";
-import { Ellipsis, Bus, Banknote } from "lucide-react";
+import { Ellipsis, Bus, Banknote, Undo2 } from "lucide-react";
 import clsx from "clsx";
 
 interface EzLinkTransactionListProps {
@@ -31,11 +31,20 @@ export function EzLinkTransactionList({
     <div className="space-y-2">
       {transactions.map((tx) => {
         const isTopup = tx.type === "topup";
+        const isReturn = tx.type === "return";
         const cat = tx.category ? categoriesMap[tx.category] : undefined;
-        const Icon = isTopup ? Banknote : cat ? ICON_MAP[cat.icon] || Ellipsis : Bus;
+        const Icon = isTopup
+          ? Banknote
+          : isReturn
+            ? Undo2
+            : cat
+              ? ICON_MAP[cat.icon] || Ellipsis
+              : Bus;
         const avatarColor = isTopup
           ? "bg-emerald-50 text-emerald-700"
-          : cat?.color || "bg-gray-50 text-gray-700";
+          : isReturn
+            ? "bg-amber-50 text-amber-700"
+            : cat?.color || "bg-gray-50 text-gray-700";
 
         return (
           <Link
@@ -57,7 +66,11 @@ export function EzLinkTransactionList({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">
-                        {isTopup ? "EZ-Link Top Up" : cat?.name || "Card Spend"}
+                        {isTopup
+                          ? "EZ-Link Top Up"
+                          : isReturn
+                            ? "Card Return"
+                            : cat?.name || "Card Spend"}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {formatDate(tx.date)}
@@ -77,7 +90,7 @@ export function EzLinkTransactionList({
                     <span
                       className={clsx(
                         "text-xs font-medium px-2 py-0.5 rounded-full capitalize",
-                        EZLINK_STYLES[tx.type as "topup" | "spend"]
+                        EZLINK_STYLES[tx.type as "topup" | "spend" | "return"]
                       )}
                     >
                       {tx.type}
