@@ -34,6 +34,13 @@ export default async function EditExpensePage({
       : Promise.resolve([]),
   ]);
   if (!expense) notFound();
+  if (expense.type === "refund") {
+    redirect(
+      expense.linkedEzlinkTransactionId
+        ? `/trips/${id}/ezlink/edit/${expense.linkedEzlinkTransactionId}`
+        : `/trips/${id}`
+    );
+  }
 
   const boundUpdateAction = updateExpense.bind(null, expenseId, id);
   const boundDeleteAction = deleteExpense.bind(null, expenseId);

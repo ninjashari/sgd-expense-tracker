@@ -20,6 +20,7 @@ import {
   ICON_MAP,
   COLOR_OPTIONS,
   CURRENCY_CODES,
+  EZLINK_REFUND_CATEGORY,
 } from "./constants";
 import type { ActionResult } from "./action-helpers";
 import {
@@ -836,6 +837,8 @@ export async function addEzLinkReturn(
   const amountInr = amountSgd * rate;
   const now = new Date().toISOString();
   const purchaseId = crypto.randomUUID();
+  const expenseId = crypto.randomUUID();
+  const ezlinkTxId = crypto.randomUUID();
 
   await db.insert(currencyPurchases).values({
     id: purchaseId,
@@ -854,8 +857,28 @@ export async function addEzLinkReturn(
     updatedAt: now,
   });
 
+  await db.insert(expenses).values({
+    id: expenseId,
+    userId,
+    tripId,
+    description: "EZ-Link Card Return",
+    amount: -amountSgd,
+    currency: "SGD",
+    amountInr: -amountInr,
+    category: EZLINK_REFUND_CATEGORY,
+    status: "paid",
+    date,
+    notes: notes.trim() || null,
+    paidBy: null,
+    currencySource: source,
+    type: "refund",
+    linkedEzlinkTransactionId: ezlinkTxId,
+    createdAt: now,
+    updatedAt: now,
+  });
+
   await db.insert(ezlinkTransactions).values({
-    id: crypto.randomUUID(),
+    id: ezlinkTxId,
     userId,
     tripId,
     type: "return",
@@ -863,6 +886,7 @@ export async function addEzLinkReturn(
     amountInr,
     category: null,
     linkedPurchaseId: purchaseId,
+    linkedExpenseId: expenseId,
     date,
     notes: notes.trim() || null,
     createdAt: now,
@@ -977,6 +1001,25 @@ export async function updateEzLinkTransaction(
       );
   }
 
+  if (existing.type === "return" && existing.linkedExpenseId) {
+    await db
+      .update(expenses)
+      .set({
+        amount: -amountSgd,
+        amountInr: -amountInr,
+        currencySource: source,
+        date,
+        notes: notes.trim() || null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(expenses.id, existing.linkedExpenseId),
+          eq(expenses.userId, userId)
+        )
+      );
+  }
+
   revalidatePath(`/trips/${tripId}`);
   redirect(`/trips/${tripId}?view=ezlink`);
 }
@@ -989,6 +1032,7 @@ export async function deleteEzLinkTransaction(id: string) {
       tripId: ezlinkTransactions.tripId,
       type: ezlinkTransactions.type,
       linkedPurchaseId: ezlinkTransactions.linkedPurchaseId,
+      linkedExpenseId: ezlinkTransactions.linkedExpenseId,
     })
     .from(ezlinkTransactions)
     .where(
@@ -1010,6 +1054,17 @@ export async function deleteEzLinkTransaction(id: string) {
         and(
           eq(currencyPurchases.id, rows[0].linkedPurchaseId),
           eq(currencyPurchases.userId, userId)
+        )
+      );
+  }
+
+  if (rows[0]?.type === "return" && rows[0].linkedExpenseId) {
+    await db
+      .delete(expenses)
+      .where(
+        and(
+          eq(expenses.id, rows[0].linkedExpenseId),
+          eq(expenses.userId, userId)
         )
       );
   }

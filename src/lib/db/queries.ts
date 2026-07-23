@@ -273,7 +273,8 @@ export async function getForexBalancesAndRates(
         and(
           eq(expenses.tripId, tripId),
           eq(expenses.userId, userId),
-          ne(expenses.currency, "INR")
+          ne(expenses.currency, "INR"),
+          eq(expenses.type, "expense")
         )
       )
       .orderBy(expenses.date, expenses.createdAt),
@@ -392,7 +393,8 @@ export async function getForexTransactionHistory(
         and(
           eq(expenses.tripId, tripId),
           eq(expenses.userId, userId),
-          ne(expenses.currency, "INR")
+          ne(expenses.currency, "INR"),
+          eq(expenses.type, "expense")
         )
       ),
   ]);

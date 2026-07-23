@@ -15,6 +15,7 @@ export function CategoryBreakdown({
 }: CategoryBreakdownProps) {
   const totals: Record<string, number> = {};
   for (const exp of expenses) {
+    if (exp.type === "refund") continue;
     totals[exp.category] = (totals[exp.category] ?? 0) + exp.amountInr;
   }
 

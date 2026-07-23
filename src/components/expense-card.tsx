@@ -2,7 +2,7 @@ import Link from "next/link";
 import { STATUS_STYLES, ICON_MAP, CURRENCY_SOURCE_STYLES } from "@/lib/constants";
 import { formatINR, formatCurrency, formatDate } from "@/lib/utils";
 import type { Expense } from "@/lib/db/schema";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, Undo2 } from "lucide-react";
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -15,21 +15,26 @@ export function ExpenseCard({
   tripId,
   categoriesMap,
 }: ExpenseCardProps) {
+  const isRefund = expense.type === "refund";
   const cat = categoriesMap[expense.category] || {
     name: "Other",
     icon: "ellipsis",
     color: "bg-gray-50 text-gray-700",
   };
-  const Icon = ICON_MAP[cat.icon] || Ellipsis;
+  const Icon = isRefund ? Undo2 : ICON_MAP[cat.icon] || Ellipsis;
+  const avatarColor = isRefund ? "bg-amber-50 text-amber-700" : cat.color;
   const statusStyle = STATUS_STYLES[expense.status as "paid" | "planned"];
   const isForeign = expense.currency !== "INR";
+  const editHref = isRefund
+    ? `/trips/${tripId}/ezlink/edit/${expense.linkedEzlinkTransactionId}`
+    : `/trips/${tripId}/edit/${expense.id}`;
 
   return (
-    <Link href={`/trips/${tripId}/edit/${expense.id}`} className="block">
+    <Link href={editHref} className="block">
       <div className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-start gap-3">
           <div
-            className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${cat.color}`}
+            className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${avatarColor}`}
           >
             <Icon size={18} />
           </div>
@@ -46,31 +51,46 @@ export function ExpenseCard({
               <div className="text-right shrink-0">
                 {isForeign ? (
                   <>
-                    <p className="font-semibold text-sm whitespace-nowrap">
-                      {formatCurrency(expense.amount, expense.currency)}
+                    <p
+                      className={`font-semibold text-sm whitespace-nowrap ${isRefund ? "text-emerald-600" : ""}`}
+                    >
+                      {isRefund && "+"}
+                      {formatCurrency(Math.abs(expense.amount), expense.currency)}
                     </p>
                     <p className="text-xs text-gray-400 whitespace-nowrap">
-                      {formatINR(expense.amountInr)}
+                      {isRefund && "+"}
+                      {formatINR(Math.abs(expense.amountInr))}
                     </p>
                   </>
                 ) : (
-                  <p className="font-semibold text-sm whitespace-nowrap">
-                    {formatINR(expense.amount)}
+                  <p
+                    className={`font-semibold text-sm whitespace-nowrap ${isRefund ? "text-emerald-600" : ""}`}
+                  >
+                    {isRefund && "+"}
+                    {formatINR(Math.abs(expense.amount))}
                   </p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span
-                className={`text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}
-              >
-                {cat.name}
-              </span>
-              <span
-                className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${statusStyle}`}
-              >
-                {expense.status}
-              </span>
+              {isRefund ? (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                  Refund
+                </span>
+              ) : (
+                <>
+                  <span
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}
+                  >
+                    {cat.name}
+                  </span>
+                  <span
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${statusStyle}`}
+                  >
+                    {expense.status}
+                  </span>
+                </>
+              )}
               {isForeign && expense.currencySource && (
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
