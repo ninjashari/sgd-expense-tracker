@@ -73,6 +73,18 @@ export function CurrencyPurchaseForm({
     setRate(computeRate(fromAmount, val));
   }
 
+  function handleTypeChange(t: "buy" | "sell") {
+    setType(t);
+    const foreign = fromCurrency === "INR" ? toCurrency : fromCurrency;
+    if (t === "sell") {
+      setFromCurrency(foreign || defaultToCurrency);
+      setToCurrency("INR");
+    } else {
+      setFromCurrency("INR");
+      setToCurrency(foreign || defaultToCurrency);
+    }
+  }
+
   return (
     <form action={formAction} className="space-y-6">
       {state && !state.success && (
@@ -90,7 +102,7 @@ export function CurrencyPurchaseForm({
             <button
               key={t}
               type="button"
-              onClick={() => setType(t)}
+              onClick={() => handleTypeChange(t)}
               className={clsx(
                 "flex-1 py-2.5 rounded-xl text-sm font-medium capitalize transition-all",
                 type === t
