@@ -19,6 +19,7 @@ export function ForexBalanceCards({ balances }: ForexBalanceCardsProps) {
   }
 
   const totalInrInvested = balances.reduce((s, b) => s + b.inrCost, 0);
+  const totalRealizedPnl = balances.reduce((s, b) => s + b.realizedPnl, 0);
 
   return (
     <div className="space-y-3">
@@ -67,6 +68,19 @@ export function ForexBalanceCards({ balances }: ForexBalanceCardsProps) {
               </span>
               <span>INR invested: {formatINR(bal.inrCost)}</span>
             </div>
+            {bal.realizedPnl !== 0 && (
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-gray-400">Realized P&amp;L</span>
+                <span
+                  className={`font-medium ${
+                    bal.realizedPnl > 0 ? "text-emerald-600" : "text-red-600"
+                  }`}
+                >
+                  {bal.realizedPnl > 0 ? "+" : "-"}
+                  {formatINR(Math.abs(bal.realizedPnl))}
+                </span>
+              </div>
+            )}
           </div>
         );
       })}
@@ -77,6 +91,29 @@ export function ForexBalanceCards({ balances }: ForexBalanceCardsProps) {
           {formatINR(totalInrInvested)}
         </p>
       </div>
+      {totalRealizedPnl !== 0 && (
+        <div
+          className={`rounded-2xl p-4 text-center ${
+            totalRealizedPnl > 0 ? "bg-emerald-50" : "bg-red-50"
+          }`}
+        >
+          <p
+            className={`text-xs ${
+              totalRealizedPnl > 0 ? "text-emerald-600" : "text-red-600"
+            }`}
+          >
+            Total Realized P&amp;L
+          </p>
+          <p
+            className={`text-lg font-bold ${
+              totalRealizedPnl > 0 ? "text-emerald-700" : "text-red-700"
+            }`}
+          >
+            {totalRealizedPnl > 0 ? "+" : "-"}
+            {formatINR(Math.abs(totalRealizedPnl))}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

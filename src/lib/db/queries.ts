@@ -236,6 +236,7 @@ export type ForexCurrencyBalance = {
   totalBalance: number;
   inrCost: number;
   cumulativeRate: number;
+  realizedPnl: number;
 };
 
 export type ForexTransaction = {
@@ -284,6 +285,7 @@ export async function getForexBalancesAndRates(
     string,
     { notes: number; card: number; inrCost: number }
   > = {};
+  const realizedPnl: Record<string, number> = {};
 
   function ensureCurrency(code: string) {
     if (!balances[code]) {
@@ -323,10 +325,10 @@ export async function getForexBalancesAndRates(
       } else if (toCode === "INR") {
         const bal = balances[fromCode];
         const totalBal = bal.notes + bal.card;
-        if (totalBal > 0) {
-          const proportion = p.fromAmount / totalBal;
-          bal.inrCost *= 1 - proportion;
-        }
+        const proportion = totalBal > 0 ? p.fromAmount / totalBal : 0;
+        const releasedCost = bal.inrCost * proportion;
+        realizedPnl[fromCode] = (realizedPnl[fromCode] ?? 0) + (p.toAmount - releasedCost);
+        bal.inrCost *= 1 - proportion;
         bal[srcField] = Math.max(0, bal[srcField] - p.fromAmount);
       } else {
         const fromBal = balances[fromCode];
@@ -367,6 +369,7 @@ export async function getForexBalancesAndRates(
       totalBalance,
       inrCost: bal.inrCost,
       cumulativeRate: totalBalance > 0 ? bal.inrCost / totalBalance : 0,
+      realizedPnl: realizedPnl[currency] ?? 0,
     });
   }
   return result;
