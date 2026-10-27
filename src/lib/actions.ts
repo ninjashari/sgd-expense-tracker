@@ -56,6 +56,13 @@ async function getUserId() {
   return session.user.id;
 }
 
+// Weighted-average balance math accumulates floating-point residue (e.g.
+// 618.7399999999998), which rounds to the same 2-decimal figure shown to the
+// user but fails a strict `amount > available` check. Tolerate half a cent.
+function exceedsBalance(amount: number, available: number): boolean {
+  return amount - available > 0.005;
+}
+
 // ── Expense Actions ──
 
 export async function addExpense(
@@ -554,7 +561,7 @@ export async function addCurrencyPurchase(
       source === "card"
         ? (srcBal?.cardBalance ?? 0)
         : (srcBal?.notesBalance ?? 0);
-    if (fromAmount > available) {
+    if (exceedsBalance(fromAmount, available)) {
       return {
         success: false,
         error: `Insufficient ${fromCurrency} ${source} balance (available: ${available.toFixed(2)})`,
@@ -762,7 +769,7 @@ export async function addEzLinkSpend(
 
   const amountSgd = parseFloat(amountSgdStr);
   const balance = await getEzLinkBalance(tripId, userId);
-  if (amountSgd > balance.balanceSgd) {
+  if (exceedsBalance(amountSgd, balance.balanceSgd)) {
     return {
       success: false,
       error: "Please fix the errors below",
@@ -823,7 +830,7 @@ export async function addEzLinkReturn(
 
   const amountSgd = parseFloat(amountSgdStr);
   const balance = await getEzLinkBalance(tripId, userId);
-  if (amountSgd > balance.balanceSgd) {
+  if (exceedsBalance(amountSgd, balance.balanceSgd)) {
     return {
       success: false,
       error: "Please fix the errors below",
@@ -955,7 +962,7 @@ export async function updateEzLinkTransaction(
   if (existing.type === "spend" || existing.type === "return") {
     const balance = await getEzLinkBalance(tripId, userId);
     const available = balance.balanceSgd + existing.amountSgd;
-    if (amountSgd > available) {
+    if (exceedsBalance(amountSgd, available)) {
       return {
         success: false,
         error: "Please fix the errors below",
